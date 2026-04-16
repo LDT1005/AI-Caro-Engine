@@ -1,0 +1,25 @@
+AI Caro Engine — Ghi chú logic 15 Scenario Tests (Thành viên 3)
+================================================================
+
+Quy ước: Board_State 15×15, 1 = đi trước, -1 = đi sau, 0 = trống. Player_Turn là phe AI đang tính.
+
+Nhóm 1 — Luật & Engine
+  G1-R01..R03: Bốn quân thẳng hàng; Acceptable_Moves là các ô hoàn thành đúng 5 liên tiếp (hai đầu nếu có).
+  G1-R04: Bàn gần đầy, vùng trống 3×3 giữa bàn; mọi ô trong Acceptable_Moves phải là ô trống (kiểm thử invalid move / harness).
+  G1-R05: Một ô trống duy nhất; sau khi đánh bàn đủ 225 ô và không có 5 liên tiếp → hòa (sinh bằng DFS + thử ô trống).
+
+Nhóm 2 — Sinh tử
+  G2-T01: Chặn bốn quân địch (half-open four).
+  G2-T02: Một nước thắng ngay.
+  G2-T03: Phải chặn bốn địch dù có tấn công hấp dẫn khác.
+  G2-T04: Nhiều nước thắng ngay — chấp nhận bất kỳ nước trong tập.
+  G2-T05: So sánh mở rộng thế mạnh (hàng 7) với tấn công yếu hơn (hàng 11).
+
+Nhóm 3 — Nâng cao
+  G3-A01: Thắng chéo phụ.
+  G3-A02: Khối 2×2 + địch góc — ưu tiên nước tạo song công (tập Acceptable_Moves gợi ý vùng lân cận; có thể tinh chỉnh sau tuning).
+  G3-A03: Mọi nước hợp lệ phải nằm trong candidate Chebyshev ≤ 2 (đúng spec sinh nước AI).
+  G3-A04: Một ô trống trên hàng — bắt buộc đánh đúng ô đó để thắng.
+  G3-A05: Bốn nước đối xứng tương đương — chấp nhận một trong bốn.
+
+Tái sinh file: từ thư mục này chạy `node generate_scenarios.mjs` (Node.js).
