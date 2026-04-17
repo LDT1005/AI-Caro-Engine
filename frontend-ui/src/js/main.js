@@ -4,25 +4,27 @@ import { UIController } from './ui.js';
 import { CONFIG } from './config.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Khởi tạo các module kiến trúc
+    // 1. Khởi tạo các module kiến trúc
     const boardUI = new CanvasBoard('game-canvas');
     const state = new GameState();
     const ui = new UIController();
 
-    // Khởi tạo các DOM elements cần thiết cho logic khóa UI
+    // 2. Khởi tạo các DOM elements phục vụ logic điều khiển và khóa UI
     const depthSelect = document.getElementById('depth-select');
     const toggleContainer = document.querySelector('.ui-toggles');
     const toggleBtns = document.querySelectorAll('.toggle-btn');
 
-    // Đọc giá trị mặc định của Depth ngay khi load trang
+    // Đọc giá trị mặc định của Depth ngay khi load trang để đồng bộ vào State
     state.metrics.depth = parseInt(depthSelect.value);
 
-    // Render bàn cờ lần đầu tiên dựa trên GameState gốc (trống).
+    // Render trạng thái ban đầu
     boardUI.render(state);
     ui.resetMetrics();
     ui.updateStatus(state.status, 'Ready to play');
 
-    // 1. Lắng nghe sự kiện Click (Game Flow)
+    // --- CÁC TRÌNH LẮNG NGHE SỰ KIỆN ---
+
+    // 1. Lắng nghe sự kiện Click trên bàn cờ (Game Flow)
     boardUI.canvas.addEventListener('click', (e) => {
         // KIỂM TRA: Bắt buộc chọn thuật toán trước khi chơi
         if (!state.metrics.mode) {
@@ -30,91 +32,100 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
 
-        // Lớp khiên bảo vệ: Bị chặn nếu AI đang nghĩ hoặc game over
+        // Lớp khiên bảo vệ (Guard): Chặn click nếu AI đang nghĩ hoặc game over
         if (!state.canInteract()) return;
 
+        // Map tọa độ từ Pixel sang mảng index
         const { row, col } = boardUI.getCellFromMouse(e);
 
-        // Thử đặt quân cờ
+        // Thử đặt quân cờ của Người chơi (X)
         if (state.placePiece(row, col)) {
-            // KHÓA GIAO DIỆN: Ngay khi đặt nước đầu tiên, thêm class CSS để khóa UI và vô hiệu hóa select
+            // [KHÓA GIAO DIỆN]: Cấm thay đổi cấu hình khi trận đấu đã bắt đầu
             if (toggleContainer) toggleContainer.classList.add('locked');
             depthSelect.disabled = true;
 
-            // Render ngay lập tức cho người chơi
+            // Render ngay lập tức nước đi của người chơi
             boardUI.render(state);
 
-            // Chuyển State sang trạng thái AI, khóa bảng, bật Spinner
+            // Chuyển State sang AI_THINKING, khóa bảng, bật Spinner
             state.status = GameStatus.AI_THINKING;
             ui.updateStatus(state.status, 'AI is thinking...');
 
-            // --- GIẢ LẬP LUỒNG AI BẤT ĐỒNG BỘ (Sẽ thay bằng Worker ở Giai đoạn 3) ---
+            // --- GIẢ LẬP LUỒNG AI BẤT ĐỒNG BỘ (Sẽ được thay bằng Web Worker ở Giai đoạn 3) ---
             setTimeout(() => {
-                for(let r = 0; r < CONFIG.BOARD_SIZE; r++) {
-                    for(let c = 0; c < CONFIG.BOARD_SIZE; c++) {
-                        if(state.board[r][c] === CONFIG.EMPTY) {
+                // Logic giả lập: Tìm ô trống đầu tiên để đặt quân AI (O)
+                let moved = false;
+                for (let r = 0; r < CONFIG.BOARD_SIZE; r++) {
+                    for (let c = 0; c < CONFIG.BOARD_SIZE; c++) {
+                        if (state.board[r][c] === CONFIG.EMPTY) {
                             state.board[r][c] = CONFIG.PLAYER_AI;
                             state.lastMove = { row: r, col: c, player: CONFIG.PLAYER_AI };
-                            
-                            state.status = GameStatus.PLAYER_TURN;
-                            boardUI.render(state);
-                            ui.updateStatus(state.status, 'Your Turn (X)');
-                            return; 
+                            moved = true;
+                            break;
                         }
                     }
+                    if (moved) break;
                 }
+                
+                // Trả lại lượt cho người chơi
+                state.status = GameStatus.PLAYER_TURN;
+                boardUI.render(state);
+                ui.updateStatus(state.status, 'Your Turn (X)');
             }, 600); 
         }
     });
 
-    // 2. Lắng nghe sự kiện Hard Reset
+    // 2. Lắng nghe sự kiện Reset Game
     document.getElementById('btn-reset').addEventListener('click', () => {
-        // Dọn dẹp hoàn toàn State Machine và Metrics
+        // Reset State Machine (Bao gồm cả việc sinh gameId mới)
         state.reset();
+        
+        // Cập nhật UI về trạng thái sạch
         boardUI.render(state);
         ui.resetMetrics();
         ui.updateStatus(state.status, 'Ready to play');
         
-        // MỞ KHÓA GIAO DIỆN
+        // [MỞ KHÓA GIAO DIỆN]: Trả lại quyền cấu hình
         if (toggleContainer) toggleContainer.classList.remove('locked');
         depthSelect.disabled = false;
         
-        // Reset giao diện các nút toggle về trạng thái ban đầu
+        // Reset các nút Mode trên giao diện
         toggleBtns.forEach(btn => btn.classList.remove('active'));
         state.metrics.mode = null;
 
-        // Đồng bộ lại Max Depth từ UI vào State sau khi reset
+        // Đồng bộ lại Depth từ UI vào State sau khi reset
         state.metrics.depth = parseInt(depthSelect.value);
     });
 
-    // 3. Lắng nghe sự kiện thay đổi Algorithm Mode (Segmented Control)
+    // 3. Lắng nghe sự kiện thay đổi Algorithm Mode (Custom Toggles)
     toggleBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // KIỂM TRA: Nếu bàn cờ đã có quân (không còn trống), chặn việc đổi mode
+            // KIỂM TRA: Nếu ván đấu đang diễn ra (bàn cờ không trống), cấm đổi mode
             if (!state.isEmpty()) {
                 console.warn("Không thể thay đổi thuật toán khi trận đấu đang diễn ra!");
                 return;
             }
 
-            // Xóa trạng thái active của toàn bộ các nút
+            // Cập nhật hiển thị nút active
             toggleBtns.forEach(b => b.classList.remove('active'));
-            // Thêm active cho nút vừa click
             e.target.classList.add('active');
             
-            // Cập nhật State trực tiếp từ data-value của nút
+            // Lưu Mode vào State để Worker sử dụng sau này
             state.metrics.mode = e.target.dataset.value;
             console.log("Đã chọn thuật toán:", state.metrics.mode);
         });
     });
 
-    // 4. Lắng nghe sự kiện thay đổi Depth
+    // 4. Lắng nghe sự kiện thay đổi Max Depth
     depthSelect.addEventListener('change', (e) => {
-        // Tương tự, nếu đang đánh (bàn cờ không trống) thì không cho đổi độ sâu
+        // KIỂM TRA: Cấm đổi độ sâu nếu ván đấu đang diễn ra
         if (!state.isEmpty()) {
             e.preventDefault();
-            depthSelect.value = state.metrics.depth; // Ép trả về giá trị cũ đang lưu trong state
+            // Ép UI quay lời giá trị cũ đang lưu trong state
+            depthSelect.value = state.metrics.depth; 
             return;
         }
+        
         state.metrics.depth = parseInt(e.target.value);
         console.log("Đã chuyển độ sâu sang:", state.metrics.depth);
     });
