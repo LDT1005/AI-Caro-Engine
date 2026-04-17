@@ -13,10 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render bàn cờ lần đầu tiên dựa trên GameState gốc (trống).
     boardUI.render(state);
     ui.resetMetrics();
-    ui.updateStatus(state.status, 'Your Turn (Black)');
+    ui.updateStatus(state.status, 'Your Turn (X)');
 
     // 1. Lắng nghe sự kiện Click (Game Flow)
     boardUI.canvas.addEventListener('click', (e) => {
+        // KIỂM TRA MỚI: Bắt buộc chọn thuật toán trước khi chơi
+        if (!state.metrics.mode) {
+            alert("Vui lòng chọn Algorithm Mode (Minimax hoặc Alpha-Beta) trước khi chơi!");
+            return; // Chặn luôn, không cho đánh cờ
+        }
+
         // Lớp khiên bảo vệ: Bị chặn nếu AI đang nghĩ hoặc game over
         if (!state.canInteract()) return;
 
@@ -44,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Trả lượt về cho người chơi
                             state.status = GameStatus.PLAYER_TURN;
                             boardUI.render(state);
-                            ui.updateStatus(state.status, 'Your Turn (Black)');
+                            ui.updateStatus(state.status, 'Your Turn (X)');
                             return; // Thoát vòng lặp ngay khi AI đã đánh
                         }
                     }
@@ -60,5 +66,24 @@ document.addEventListener('DOMContentLoaded', () => {
         boardUI.render(state);
         ui.resetMetrics();
         ui.updateStatus(state.status, 'New Game - Your Turn');
+        
+        // Reset lại các radio button trên UI để đồng bộ với state (bỏ chọn)
+        document.querySelectorAll('input[name="algo-mode"]').forEach(radio => {
+            radio.checked = false;
+        });
+    });
+
+    // 3. Lắng nghe sự kiện thay đổi Algorithm Mode
+    document.querySelectorAll('input[name="algo-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            state.metrics.mode = e.target.value;
+            console.log("Đã chuyển thuật toán sang:", state.metrics.mode);
+        });
+    });
+
+    // 4. Lắng nghe sự kiện thay đổi Depth
+    document.getElementById('depth-select').addEventListener('change', (e) => {
+        state.metrics.depth = parseInt(e.target.value);
+        console.log("Đã chuyển độ sâu sang:", state.metrics.depth);
     });
 });

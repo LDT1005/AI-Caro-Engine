@@ -26,13 +26,17 @@ export class GameState {
         this.gameId = (this.gameId || 0) + 1; 
         this.requestId = 0;
         
+        // Tìm xem có thuật toán nào đang được chọn trên UI không
+        const selectedMode = document.querySelector('input[name="algo-mode"]:checked');
+        
         this.metrics = {
             nodesEvaluated: 0,
             timeMs: 0,
             score: 0,
             depth: 0,
             timeout: false,
-            mode: document.querySelector('input[name="algo-mode"]:checked').value
+            // Nếu chưa chọn, mode sẽ là null
+            mode: selectedMode ? selectedMode.value : null 
         };
     }
 

@@ -61,26 +61,32 @@ export class CanvasBoard {
     drawPiece(row, col, player) {
         const x = col * CONFIG.CELL_SIZE + (CONFIG.CELL_SIZE / 2);
         const y = row * CONFIG.CELL_SIZE + (CONFIG.CELL_SIZE / 2);
-        const radius = CONFIG.CELL_SIZE * 0.38; // Chiếm 76% ô cờ
 
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        // Cấu hình Typography cho X và O
+        const fontSize = CONFIG.CELL_SIZE * 0.7; // Chữ chiếm 70% kích thước ô
+        this.ctx.font = `600 ${fontSize}px "Inter", sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
 
+        let text = '';
+        
         if (player === CONFIG.PLAYER_HUMAN) {
-            // Quân Đen
-            this.ctx.fillStyle = '#111111';
-            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+            text = 'X';
+            this.ctx.fillStyle = '#111111'; // Màu đen xám mạnh mẽ cho X
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
         } else if (player === CONFIG.PLAYER_AI) {
-            // Quân Trắng
-            this.ctx.fillStyle = '#f8fafc';
-            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            text = 'O';
+            this.ctx.fillStyle = '#f8fafc'; // Màu trắng sáng cho O
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         }
 
-        // Thiết lập bóng đổ (Drop shadow)
+        // Thiết lập bóng đổ (Drop shadow) để text nổi bật lên nền bàn cờ
         this.ctx.shadowBlur = 4;
         this.ctx.shadowOffsetX = 2;
         this.ctx.shadowOffsetY = 2;
-        this.ctx.fill();
+
+        // Vẽ Text X hoặc O
+        this.ctx.fillText(text, x, y);
 
         // Reset shadow để không ảnh hưởng các hàm vẽ sau
         this.ctx.shadowColor = 'transparent';
@@ -90,11 +96,11 @@ export class CanvasBoard {
     drawHighlight(row, col, player) {
         const x = col * CONFIG.CELL_SIZE + (CONFIG.CELL_SIZE / 2);
         const y = row * CONFIG.CELL_SIZE + (CONFIG.CELL_SIZE / 2);
-        const radius = CONFIG.CELL_SIZE * 0.45; // Viền lớn hơn quân cờ một chút
+        const radius = CONFIG.CELL_SIZE * 0.45; 
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
-        // Nhấn màu xanh cho User, màu cam đỏ cho AI
+        // Nhấn màu xanh cho User (X), màu cam đỏ cho AI (O)
         this.ctx.strokeStyle = player === CONFIG.PLAYER_HUMAN ? 'rgba(59, 130, 246, 0.8)' : 'rgba(239, 68, 68, 0.8)';
         this.ctx.lineWidth = 2;
         this.ctx.shadowBlur = 6;
@@ -103,7 +109,7 @@ export class CanvasBoard {
         this.ctx.shadowColor = 'transparent'; 
     }
 
-    // Render lại toàn bộ frame (thực thi cực nhanh < 1ms)
+    // Render lại toàn bộ frame 
     render(gameState) {
         this.drawGrid();
         for (let r = 0; r < CONFIG.BOARD_SIZE; r++) {
