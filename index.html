@@ -6,6 +6,34 @@
     <title>AI Caro Engine - Technical Showcase</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./frontend-ui/src/css/main.css">
+    <style>
+        .ui-toggles { 
+            display: flex; 
+            gap: 8px; 
+        }
+        .toggle-btn {
+            flex: 1; 
+            padding: 10px; 
+            background: var(--bg-main);
+            border: 1px solid var(--border-color); 
+            color: var(--text-secondary);
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-family: var(--font-ui);
+            font-size: 14px; 
+            font-weight: 500; 
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover { 
+            border-color: var(--accent-color); 
+            color: var(--text-primary); 
+        }
+        .toggle-btn.active {
+            background: var(--accent-color); 
+            color: #fff; 
+            border-color: var(--accent-color);
+        }
+    </style>
 </head>
 <body>
     <div class="app-layout">
@@ -32,26 +60,19 @@
                 <div class="control-group">
                     <label for="depth-select">Max Depth:</label>
                     <select id="depth-select">
-                        <option value="1">Depth 1</option>
+                        <option value="1" selected>Depth 1</option>
                         <option value="2">Depth 2</option>
                         <option value="3">Depth 3</option>
-                        <option value="4" selected>Depth 4</option>
+                        <option value="4">Depth 4</option>
                         <option value="5">Depth 5</option>
                     </select>
                 </div>
 
                 <div class="control-group">
                     <label>Algorithm Mode:</label>
-                    <div class="radio-group">
-                        <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-right: 16px;">
-                            <input type="radio" name="algo-mode" value="minimax" style="cursor: pointer; margin: 0;">
-                            Minimax
-                        </label>
-                        
-                        <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                            <input type="radio" name="algo-mode" value="alpha-beta" style="cursor: pointer; margin: 0;">
-                            Alpha-Beta
-                        </label>
+                    <div class="ui-toggles">
+                        <button type="button" class="toggle-btn" data-value="minimax">Minimax</button>
+                        <button type="button" class="toggle-btn" data-value="alpha-beta">Alpha-Beta</button>
                     </div>
                 </div>
 

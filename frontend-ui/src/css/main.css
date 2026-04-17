@@ -121,12 +121,13 @@ select {
     border-radius: 4px;
     font-family: var(--font-ui);
     outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
 }
 
-.radio-group {
-    display: flex;
-    gap: 16px;
-    font-size: 14px;
+/* Hiệu ứng vi mô (Micro-interaction) cho Dropdown */
+select:hover, select:focus {
+    border-color: var(--accent-color);
 }
 
 .btn-primary {

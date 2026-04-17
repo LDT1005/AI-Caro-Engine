@@ -9,7 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = new GameState();
     const ui = new UIController();
 
-    // Thay thế logic vẽ tĩnh của Giai đoạn 1 bằng logic render động.
+    // Khởi tạo và đọc giá trị mặc định của Depth ngay khi load trang
+    const depthSelect = document.getElementById('depth-select');
+    state.metrics.depth = parseInt(depthSelect.value);
+
     // Render bàn cờ lần đầu tiên dựa trên GameState gốc (trống).
     boardUI.render(state);
     ui.resetMetrics();
@@ -17,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Lắng nghe sự kiện Click (Game Flow)
     boardUI.canvas.addEventListener('click', (e) => {
-        // KIỂM TRA MỚI: Bắt buộc chọn thuật toán trước khi chơi
+        // KIỂM TRA MỚI: Dựa vào JS State làm Single Source of Truth
         if (!state.metrics.mode) {
             alert("Vui lòng chọn Algorithm Mode (Minimax hoặc Alpha-Beta) trước khi chơi!");
             return; // Chặn luôn, không cho đánh cờ
@@ -28,61 +31,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { row, col } = boardUI.getCellFromMouse(e);
 
-        // Thử đặt quân cờ (sẽ trả về false nếu ô đã có quân)
+        // Thử đặt quân cờ
         if (state.placePiece(row, col)) {
-            // Render ngay lập tức cho người chơi (KPI phản hồi < 16ms)
+            // Render ngay lập tức cho người chơi
             boardUI.render(state);
 
             // Chuyển State sang trạng thái AI, khóa bảng, bật Spinner
             state.status = GameStatus.AI_THINKING;
             ui.updateStatus(state.status, 'AI is thinking...');
 
-            // --- GIẢ LẬP LUỒNG AI BẤT ĐỒNG BỘ (Sẽ thay bằng Worker ở Giai đoạn 3) ---
+            // --- GIẢ LẬP LUỒNG AI BẤT ĐỒNG BỘ ---
             setTimeout(() => {
-                // Mock logic: AI tìm ô trống đầu tiên từ góc trên cùng bên trái để đánh
                 for(let r = 0; r < CONFIG.BOARD_SIZE; r++) {
                     for(let c = 0; c < CONFIG.BOARD_SIZE; c++) {
                         if(state.board[r][c] === CONFIG.EMPTY) {
-                            // Cập nhật State cho AI
                             state.board[r][c] = CONFIG.PLAYER_AI;
                             state.lastMove = { row: r, col: c, player: CONFIG.PLAYER_AI };
                             
-                            // Trả lượt về cho người chơi
                             state.status = GameStatus.PLAYER_TURN;
                             boardUI.render(state);
                             ui.updateStatus(state.status, 'Your Turn (X)');
-                            return; // Thoát vòng lặp ngay khi AI đã đánh
+                            return; 
                         }
                     }
                 }
-            }, 600); // Giả lập độ trễ AI suy nghĩ mất 600ms
+            }, 600);
         }
     });
 
     // 2. Lắng nghe sự kiện Hard Reset
     document.getElementById('btn-reset').addEventListener('click', () => {
-        // Dọn dẹp hoàn toàn State Machine và Metrics, vẽ lại lưới trống
         state.reset();
         boardUI.render(state);
         ui.resetMetrics();
         ui.updateStatus(state.status, 'New Game - Your Turn');
         
-        // Reset lại các radio button trên UI để đồng bộ với state (bỏ chọn)
-        document.querySelectorAll('input[name="algo-mode"]').forEach(radio => {
-            radio.checked = false;
+        // Reset giao diện các nút toggle về trạng thái ban đầu
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.classList.remove('active');
         });
+        state.metrics.mode = null;
+
+        // Reset luôn Max Depth về giá trị đang hiển thị trên UI
+        state.metrics.depth = parseInt(depthSelect.value);
     });
 
-    // 3. Lắng nghe sự kiện thay đổi Algorithm Mode
-    document.querySelectorAll('input[name="algo-mode"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            state.metrics.mode = e.target.value;
+    // 3. Lắng nghe sự kiện thay đổi Algorithm Mode (Segmented Control)
+    const toggleBtns = document.querySelectorAll('.toggle-btn');
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Xóa trạng thái active của toàn bộ các nút
+            toggleBtns.forEach(b => b.classList.remove('active'));
+            // Thêm active cho nút vừa click
+            e.target.classList.add('active');
+            
+            // Cập nhật State trực tiếp
+            state.metrics.mode = e.target.dataset.value;
             console.log("Đã chuyển thuật toán sang:", state.metrics.mode);
         });
     });
 
     // 4. Lắng nghe sự kiện thay đổi Depth
-    document.getElementById('depth-select').addEventListener('change', (e) => {
+    depthSelect.addEventListener('change', (e) => {
         state.metrics.depth = parseInt(e.target.value);
         console.log("Đã chuyển độ sâu sang:", state.metrics.depth);
     });
