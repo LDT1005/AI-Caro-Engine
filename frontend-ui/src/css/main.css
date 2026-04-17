@@ -125,7 +125,6 @@ select {
     transition: border-color 0.2s ease;
 }
 
-/* Hiệu ứng vi mô (Micro-interaction) cho Dropdown */
 select:hover, select:focus {
     border-color: var(--accent-color);
 }
@@ -148,7 +147,7 @@ select:hover, select:focus {
     background-color: var(--accent-hover);
 }
 
-/* --- Dashboard Metrics --- */
+/* --- Dashboard Metrics (Requirement 5) --- */
 .metric-row {
     display: flex;
     justify-content: space-between;
@@ -167,6 +166,7 @@ select:hover, select:focus {
 }
 
 .metric-value {
+    /* Đảm bảo Font Monospace và Tabular Nums chống giật layout */
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: 15px;
@@ -174,10 +174,10 @@ select:hover, select:focus {
     color: var(--accent-color);
 }
 
-.metric-value.false { color: #10b981; } /* Green for no timeout */
-.metric-value.true { color: #ef4444; }  /* Red for timeout */
+.metric-value.false { color: #10b981; } 
+.metric-value.true { color: #ef4444; }  
 
-/* --- Status & Spinner --- */
+/* --- Status & Spinner (Requirement 5) --- */
 .status-bar {
     display: flex;
     align-items: center;
