@@ -53,6 +53,7 @@ export class GameState {
 
     // Lớp khiên bảo vệ (Guard): Chặn tương tác nếu không phải lượt người chơi hoặc game đã kết thúc
     canInteract() {
+        // Chỉ cho phép tương tác nếu đang là lượt người và game chưa kết thúc
         return this.status === GameStatus.PLAYER_TURN && this.status !== GameStatus.GAME_OVER;
     }
 
@@ -66,7 +67,57 @@ export class GameState {
         // Cập nhật trạng thái ô cờ và lưu lại nước đi cuối cùng để UI vẽ highlight
         this.board[row][col] = this.currentTurn;
         this.lastMove = { row, col, player: this.currentTurn };
+
+        // KIỂM TRA TRẠNG THÁI KẾT THÚC: 
+        // Kiểm tra xem nước đi này có tạo thành chuỗi 5 hay không
+        if (this.checkWin(row, col)) {
+            this.status = GameStatus.GAME_OVER;
+            this.winner = this.currentTurn;
+        } else if (this.checkDraw()) {
+            this.status = GameStatus.DRAW;
+        }
         
         return true;
+    }
+
+    /**
+     * Logic kiểm tra thắng (Lite version cho Frontend)
+     * Quét 4 hướng từ ô vừa đánh để tìm chuỗi 5 quân liên tiếp
+     */
+    checkWin(row, col) {
+        const player = this.board[row][col];
+        const directions = [
+            [0, 1],  // Ngang
+            [1, 0],  // Dọc
+            [1, 1],  // Chéo chính
+            [1, -1]  // Chéo phụ
+        ];
+
+        for (const [dr, dc] of directions) {
+            let count = 1;
+            // Đi tới (Xuôi theo hướng dr, dc)
+            for (let i = 1; i < 5; i++) {
+                const r = row + dr * i;
+                const c = col + dc * i;
+                if (r >= 0 && r < CONFIG.BOARD_SIZE && c >= 0 && c < CONFIG.BOARD_SIZE && this.board[r][c] === player) {
+                    count++;
+                } else break;
+            }
+            // Đi lùi (Ngược theo hướng dr, dc)
+            for (let i = 1; i < 5; i++) {
+                const r = row - dr * i;
+                const c = col - dc * i;
+                if (r >= 0 && r < CONFIG.BOARD_SIZE && c >= 0 && c < CONFIG.BOARD_SIZE && this.board[r][c] === player) {
+                    count++;
+                } else break;
+            }
+            if (count >= 5) return true;
+        }
+        return false;
+    }
+
+    // Kiểm tra hòa: Nếu toàn bộ bàn cờ đã kín quân mà chưa có ai thắng
+    checkDraw() {
+        return this.board.every(row => row.every(cell => cell !== CONFIG.EMPTY));
     }
 }
