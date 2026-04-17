@@ -21,6 +21,18 @@ export class CanvasBoard {
         this.ctx.scale(this.dpr, this.dpr);
     }
 
+    // Mapping tọa độ tuyệt đối chuẩn xác
+    getCellFromMouse(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const col = Math.floor(x / CONFIG.CELL_SIZE);
+        const row = Math.floor(y / CONFIG.CELL_SIZE);
+
+        return { row, col };
+    }
+
     drawGrid() {
         // Xóa sạch canvas trước khi vẽ
         this.ctx.clearRect(0, 0, this.displaySize, this.displaySize);
@@ -72,5 +84,37 @@ export class CanvasBoard {
 
         // Reset shadow để không ảnh hưởng các hàm vẽ sau
         this.ctx.shadowColor = 'transparent';
+    }
+
+    // Hiệu ứng Vi mô: Đánh dấu nước cờ mới nhất
+    drawHighlight(row, col, player) {
+        const x = col * CONFIG.CELL_SIZE + (CONFIG.CELL_SIZE / 2);
+        const y = row * CONFIG.CELL_SIZE + (CONFIG.CELL_SIZE / 2);
+        const radius = CONFIG.CELL_SIZE * 0.45; // Viền lớn hơn quân cờ một chút
+
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        // Nhấn màu xanh cho User, màu cam đỏ cho AI
+        this.ctx.strokeStyle = player === CONFIG.PLAYER_HUMAN ? 'rgba(59, 130, 246, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowBlur = 6;
+        this.ctx.shadowColor = this.ctx.strokeStyle;
+        this.ctx.stroke();
+        this.ctx.shadowColor = 'transparent'; 
+    }
+
+    // Render lại toàn bộ frame (thực thi cực nhanh < 1ms)
+    render(gameState) {
+        this.drawGrid();
+        for (let r = 0; r < CONFIG.BOARD_SIZE; r++) {
+            for (let c = 0; c < CONFIG.BOARD_SIZE; c++) {
+                if (gameState.board[r][c] !== CONFIG.EMPTY) {
+                    this.drawPiece(r, c, gameState.board[r][c]);
+                }
+            }
+        }
+        if (gameState.lastMove) {
+            this.drawHighlight(gameState.lastMove.row, gameState.lastMove.col, gameState.lastMove.player);
+        }
     }
 }
