@@ -1,53 +1,131 @@
 import Engine from "./engine.js";
-
-
 const engine = new Engine();
 let worker = null;
-let timeoutId = null;
+let hardTimeoutId = null;
 
 const boardDiv = document.getElementById("board");
 
+engine.onGameStateChange((snap) => {
+  render(snap);
+});
+
+engine.onMetrics((record) => {
+  console.log('[METRICS]', JSON.stringify(record));
+});
 
 function initWorker() {
+  if (worker) {
+    worker.terminate();
+    worker = null;
+  }
+
   worker = new Worker("worker.js");
 
   worker.onmessage = function (e) {
     const data = e.data;
 
-    if (data.type === "AI_RESULT") {
+    if (data.type === "AI_READY") {
+      console.log("[Worker] WASM sẵn sàng");
+      return;
+    }
 
-      
+    if (data.type === "AI_RESULT") {
       if (data.sessionId !== engine.sessionId) return;
       if (data.requestId !== engine.requestId) return;
 
-      
-      clearTimeout(timeoutId);
+      clearTimeout(hardTimeoutId);
 
-      engine.isThinking = false;
+      if (data.bestMove === -1) {
+        console.warn("[Worker] AI trả về -1, bỏ qua");
+        engine.setThinking(false);
+        return;
+      }
 
-      if (data.bestMove === -1) return;
+      engine.makeAIMove(data.bestMove, {
+        score: data.score,
+        nodesEvaluated: data.nodesEvaluated,
+        timeMs: data.timeMs,
+        depthReached: data.depthReached,
+        isTimeout: data.isTimeout
+      });
 
-      engine.makeAIMove(data.bestMove);
+      return;
+    }
 
-      render();
+    if (data.type === "AI_TIMEOUT") {
+      if (data.sessionId !== engine.sessionId) return;
+      if (data.requestId !== engine.requestId) return;
+
+      console.warn("[Worker] AI_TIMEOUT — hết thời gian");
+      clearTimeout(hardTimeoutId);
+      engine.setThinking(false);
+      return;
     }
 
     if (data.type === "AI_ERROR") {
-      console.error("AI ERROR:", data.message);
-      engine.isThinking = false;
-    }
+      if (data.sessionId !== engine.sessionId) return;
+      if (data.requestId !== engine.requestId) return;
 
-    if (data.type === "AI_READY") {
-      console.log("AI READY");
+      console.error("[Worker] AI_ERROR:", data.message);
+      clearTimeout(hardTimeoutId);
+      engine.setThinking(false);
+      return;
     }
+  };
+
+  worker.onerror = function (err) {
+    console.error("[Worker] Lỗi worker không bắt được:", err.message);
+    clearTimeout(hardTimeoutId);
+    engine.setThinking(false);
   };
 }
 
+function handleClick(r, c) {
+  if (engine.isThinking()) return;
+  if (engine.getSnapshot().gameStatus !== "ONGOING") return;
 
-initWorker();
+  const index = r * 15 + c;
+  const success = engine.makeMove(index);
+  if (!success) return;
 
+  const snap = engine.getSnapshot();
 
-function render() {
+  if (snap.gameStatus !== "ONGOING") return;
+
+  engine.setThinking(true);
+  engine.requestId++;
+
+  worker.postMessage({
+    type: "AI_REQUEST",
+    board: [...engine.board],
+    playerTurn: engine.currentPlayer,
+    sessionId: engine.sessionId,
+    requestId: engine.requestId,
+    depth: engine.config.depth,
+    timeoutMs: engine.config.timeoutMs,
+    useAlphaBeta: engine.config.useAlphaBeta
+  });
+
+  hardTimeoutId = setTimeout(() => {
+    if (engine.isThinking()) {
+      console.warn("[Main] Hard timeout — worker không phản hồi, restart");
+      initWorker();
+      engine.setThinking(false);
+    }
+  }, engine.config.timeoutMs + 500); 
+}
+
+function resetGame() {
+  clearTimeout(hardTimeoutId);
+
+  engine.reset();
+
+  initWorker();
+}
+
+function render(snap) {
+  if (!snap) snap = engine.getSnapshot();
+
   boardDiv.innerHTML = "";
 
   for (let i = 0; i < 225; i++) {
@@ -57,68 +135,36 @@ function render() {
     const cell = document.createElement("div");
     cell.className = "cell";
 
-    if (engine.board[i] === 1) cell.innerText = "X";
-    if (engine.board[i] === -1) cell.innerText = "O";
+    if (snap.board[i] === 1) cell.innerText = "X";
+    if (snap.board[i] === -1) cell.innerText = "O";
 
-    cell.onclick = () => handleClick(r, c);
+    if (i === snap.lastMoveIndex) cell.classList.add("last-move");
+
+    if (!snap.isThinking && snap.gameStatus === "ONGOING") {
+      cell.onclick = () => handleClick(r, c);
+    }
 
     boardDiv.appendChild(cell);
   }
+
+  updateStatus(snap);
+}
+
+function updateStatus(snap) {
+  let statusEl = document.getElementById("status");
+  if (!statusEl) return;
+
+  if (snap.gameStatus === "WIN_P1") statusEl.innerText = "X thắng!";
+  else if (snap.gameStatus === "WIN_P2") statusEl.innerText = "O thắng!";
+  else if (snap.gameStatus === "DRAW") statusEl.innerText = "Hòa!";
+  else if (snap.isThinking) statusEl.innerText = "AI đang suy nghĩ...";
+  else statusEl.innerText = snap.currentPlayer === 1 ? "Lượt X" : "Lượt O";
 }
 
 
-function handleClick(r, c) {
-  if (engine.isThinking) return;
-
-  const index = r * 15 + c;
-
-  const success = engine.makeMove(index);
-  if (!success) return;
-
-  render();
-
-  // Nếu game kết thúc → dừng
-  if (engine.gameStatus !== "ONGOING") return;
-
-  
-  engine.isThinking = true;
-  engine.requestId++;
-
-  worker.postMessage({
-    type: "AI_REQUEST",
-    board: engine.board,
-    player: engine.currentPlayer,
-    sessionId: engine.sessionId,
-    requestId: engine.requestId
-  });
-
-
-  timeoutId = setTimeout(() => {
-    if (engine.isThinking) {
-      console.log("AI TIMEOUT -> restart worker");
-
-      worker.terminate();
-      initWorker(); 
-
-      engine.isThinking = false;
-    }
-  }, 3000);
-}
-
-
-function resetGame() {
-  engine.reset();
-
-  clearTimeout(timeoutId);
-
-  worker.terminate();
-  initWorker(); 
-
-  render();
-}
-
-
+initWorker();
 render();
 
-
 window.resetGame = resetGame;
+
+document.getElementById("resetBtn").addEventListener("click", resetGame);
