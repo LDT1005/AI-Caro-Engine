@@ -1,140 +1,124 @@
-const worker = new Worker("worker.js");
-worker.onmessage = function (e) {
-  const move = e.data;
+import Engine from "./engine.js";
 
-  if (!move || gameOver) {
-    isAITurn = false;
-    return;
-  }
 
-  makeMove(move.r, move.c);
-  isAITurn = false;
-};
-// ************************** TẠO BOARD 15x15
-const SIZE = 15;
+const engine = new Engine();
+let worker = null;
+let timeoutId = null;
 
-let board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-let currentPlayer = 1; // 1 = X, -1 = O
-let movesPlayed = 0;
-let gameOver = false;
-let isAITurn = false;
-
-// ************************** RENDER BOARD
 const boardDiv = document.getElementById("board");
 
-function renderBoard() {
+
+function initWorker() {
+  worker = new Worker("worker.js");
+
+  worker.onmessage = function (e) {
+    const data = e.data;
+
+    if (data.type === "AI_RESULT") {
+
+      
+      if (data.sessionId !== engine.sessionId) return;
+      if (data.requestId !== engine.requestId) return;
+
+      
+      clearTimeout(timeoutId);
+
+      engine.isThinking = false;
+
+      if (data.bestMove === -1) return;
+
+      engine.makeAIMove(data.bestMove);
+
+      render();
+    }
+
+    if (data.type === "AI_ERROR") {
+      console.error("AI ERROR:", data.message);
+      engine.isThinking = false;
+    }
+
+    if (data.type === "AI_READY") {
+      console.log("AI READY");
+    }
+  };
+}
+
+
+initWorker();
+
+
+function render() {
   boardDiv.innerHTML = "";
 
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
+  for (let i = 0; i < 225; i++) {
+    const r = Math.floor(i / 15);
+    const c = i % 15;
 
-      if (board[r][c] === 1) cell.innerText = "X";
-      if (board[r][c] === -1) cell.innerText = "O";
+    const cell = document.createElement("div");
+    cell.className = "cell";
 
-      cell.onclick = () => handleClick(r, c);
+    if (engine.board[i] === 1) cell.innerText = "X";
+    if (engine.board[i] === -1) cell.innerText = "O";
 
-      boardDiv.appendChild(cell);
-    }
+    cell.onclick = () => handleClick(r, c);
+
+    boardDiv.appendChild(cell);
   }
 }
 
-renderBoard();
 
-// ************************** PLACE MOVE
-function placeMove(r, c) {
-  if (gameOver || board[r][c] !== 0) return false;
-
-  board[r][c] = currentPlayer;
-  movesPlayed++;
-  return true;
-}
-
-// ************************** CHECK WIN
-function checkDirection(r, c, dr, dc) {
-  let count = 1;
-
-  for (let i = 1; i < 5; i++) {
-    let nr = r + dr * i;
-    let nc = c + dc * i;
-    if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) break;
-    if (board[nr][nc] !== currentPlayer) break;
-    count++;
-  }
-
-  for (let i = 1; i < 5; i++) {
-    let nr = r - dr * i;
-    let nc = c - dc * i;
-    if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) break;
-    if (board[nr][nc] !== currentPlayer) break;
-    count++;
-  }
-
-  return count >= 5;
-}
-
-function checkWin(r, c) {
-  return (
-    checkDirection(r, c, 0, 1) ||   // ngang
-    checkDirection(r, c, 1, 0) ||   // dọc
-    checkDirection(r, c, 1, 1) ||   // chéo chính
-    checkDirection(r, c, 1, -1)     // chéo phụ
-  );
-}
-
-// ************************** CHECK DRAW
-function checkDraw() {
-  return movesPlayed === SIZE * SIZE;
-}
-
-// ************************** MAKE MOVE (DÙNG CHUNG)
-function makeMove(r, c) {
-  if (!placeMove(r, c)) return false;
-
-  if (checkWin(r, c)) {
-    alert((currentPlayer === 1 ? "X" : "O") + " thắng!");
-    gameOver = true;
-    renderBoard();
-    return true;
-  }
-
-  if (checkDraw()) {
-    alert("Hòa!");
-    gameOver = true;
-    renderBoard();
-    return true;
-  }
-
-  currentPlayer *= -1;
-  renderBoard();
-  return true;
-}
-
-// ************************** HANDLE CLICK (CHUẨN PHASE 3)
 function handleClick(r, c) {
-  if (gameOver || isAITurn) return;
+  if (engine.isThinking) return;
 
-  // Người chơi đi
-  if (!makeMove(r, c)) return;
+  const index = r * 15 + c;
 
-  if (gameOver) return;
+  const success = engine.makeMove(index);
+  if (!success) return;
 
-  // AI đi
-  isAITurn = true;
-  // gửi board sang worker
-worker.postMessage({
-  board: JSON.parse(JSON.stringify(board))
-});
+  render();
+
+  // Nếu game kết thúc → dừng
+  if (engine.gameStatus !== "ONGOING") return;
+
+  
+  engine.isThinking = true;
+  engine.requestId++;
+
+  worker.postMessage({
+    type: "AI_REQUEST",
+    board: engine.board,
+    player: engine.currentPlayer,
+    sessionId: engine.sessionId,
+    requestId: engine.requestId
+  });
+
+
+  timeoutId = setTimeout(() => {
+    if (engine.isThinking) {
+      console.log("AI TIMEOUT -> restart worker");
+
+      worker.terminate();
+      initWorker(); 
+
+      engine.isThinking = false;
+    }
+  }, 3000);
 }
 
-// ************************** RESET GAME
+
 function resetGame() {
-  board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-  currentPlayer = 1;
-  movesPlayed = 0;
-  gameOver = false;
-  isAITurn = false;
+  engine.reset();
 
-  renderBoard();
+  clearTimeout(timeoutId);
+
+  worker.terminate();
+  initWorker(); 
+
+  render();
 }
+
+
+render();
+
+
+window.resetGame = resetGame;
