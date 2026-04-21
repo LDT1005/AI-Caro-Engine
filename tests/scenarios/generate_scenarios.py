@@ -228,7 +228,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[7, 4], [7, 9]],
             "Expected_Priority": "Hoàn thành 5 quân liên tiếp theo hàng ngang (hai đầu hợp lệ).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G1-R02",
@@ -237,7 +237,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[4, 7], [9, 7]],
             "Expected_Priority": "Thắng dọc với nước thứ 5 tại một trong hai đầu hở.",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G1-R03",
@@ -246,7 +246,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[4, 4], [9, 9]],
             "Expected_Priority": "Thắng chéo chính (đường chéo song song vector (1,1)).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G1-R04",
@@ -255,7 +255,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": legal_empty_cells(inv_board),
             "Expected_Priority": "Chỉ chấp nhận ô trống; harness từ chối nước đặt trùng quân (invalid move).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G1-R05",
@@ -264,7 +264,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [draw_empty],
             "Expected_Priority": "Ô trống duy nhất; sau khi đánh bàn đầy và không có 5 liên tiếp — hòa.",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G2-T01",
@@ -273,7 +273,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[7, 3], [7, 8]],
             "Expected_Priority": "Chặn Half-Open Four của đối thủ (hai điểm chặn năm liên tiếp).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G2-T02",
@@ -282,7 +282,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[10, 6]],
             "Expected_Priority": "Nước thắng tức thì (năm ngang).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G2-T03",
@@ -291,7 +291,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[3, 4], [3, 9]],
             "Expected_Priority": "Ưu tiên chặn bốn quân địch sắp thành năm hơn tấn công xa.",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G2-T04",
@@ -300,7 +300,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[1, 0], [1, 5], [0, 13], [5, 13]],
             "Expected_Priority": "Không bỏ lỡ nước thắng tức thì (hai đường thắng độc lập).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G2-T05",
@@ -309,7 +309,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[7, 4], [7, 8]],
             "Expected_Priority": "Ưu tiên mở rộng ba quân giữa hàng 7 (tạo thế 4 liên tiếp hai đầu hở) hơn hàng 11 yếu.",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G3-A01",
@@ -318,7 +318,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[4, 10], [9, 5]],
             "Expected_Priority": "Thắng chéo phụ (đường cố định r+c).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G3-A02",
@@ -327,7 +327,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[6, 7], [7, 6], [9, 8], [8, 9]],
             "Expected_Priority": "Ưu tiên nước tạo song công / đe dọa kép (một trong các nước lân cận khối 2x2).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G3-A03",
@@ -336,7 +336,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": chebyshev_candidates(mid, 2),
             "Expected_Priority": "Nước đi phải thuộc tập candidate Chebyshev<=2 quanh quân hiện có (theo spec AI).",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G3-A04",
@@ -345,7 +345,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[7, 4]],
             "Expected_Priority": "Một ô trống duy nhất trên hàng — hoàn thành 5 quân P1.",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
         {
             "Test_ID": "G3-A05",
@@ -354,7 +354,7 @@ def main() -> None:
             "Player_Turn": 1,
             "Acceptable_Moves": [[6, 7], [8, 7], [7, 5], [7, 9]],
             "Expected_Priority": "Đối xứng quanh trung tâm — chấp nhận bất kỳ nước trong tập tương đương.",
-            "Pass_Fail": None,
+            "Pass/Fail": None,
         },
     ]
 

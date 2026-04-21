@@ -22,4 +22,9 @@ Nhóm 3 — Nâng cao
   G3-A04: Một ô trống trên hàng — bắt buộc đánh đúng ô đó để thắng.
   G3-A05: Bốn nước đối xứng tương đương — chấp nhận một trong bốn.
 
-Tái sinh file: từ thư mục này chạy `node generate_scenarios.mjs` (Node.js).
+Tái sinh file (từ thư mục tests/scenarios):
+  - Python:  `python generate_scenarios.py`  hoặc  `python3 generate_scenarios.py`
+  - Node.js: `node generate_scenarios.mjs`
+
+Lưu ý: G1-R05 (ô trống hòa) phụ thuộc thứ tự duyệt/shuffle; Python và Node có thể cho ma trận
+hơi khác nhau nhưng đều thỏa “một ô trống, đánh xong không có 5 liên tiếp”.
