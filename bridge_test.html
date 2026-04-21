@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Bridge Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h2 { color: #569cd6; }
+    .pass { color: #4ec94e; }
+    .fail { color: #f44747; }
+    .info { color: #dcdcaa; }
+    #log {
+      background: #252526;
+      padding: 16px;
+      border-radius: 6px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    button {
+      margin-bottom: 16px;
+      padding: 8px 20px;
+      font-size: 14px;
+      background: #0e639c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2> WASM Bridge Test — TV2</h2>
+<button onclick="runTests()">Chạy tất cả tests</button>
+<div id="log">Nhấn nút để bắt đầu...</div>
+
+<script>
+  const logEl = document.getElementById('log');
+  let passCount = 0;
+  let failCount = 0;
+
+  function log(msg, type = 'info') {
+    const span = document.createElement('span');
+    span.className = type;
+    span.textContent = msg + '\n';
+    logEl.appendChild(span);
+  }
+
+  function runTests() {
+    logEl.innerHTML = '';
+    passCount = 0;
+    failCount = 0;
+
+    log('='.repeat(50));
+    log('  WASM BRIDGE TEST — Giai đoạn 1');
+    log('='.repeat(50));
+
+    const worker = new Worker('worker.js');
+    let requestId = 0;
+    const results = {};
+
+    worker.onmessage = function (e) {
+      const data = e.data;
+
+      
+      if (data.type === 'AI_READY') {
+        log('\n Test 1: Worker load WASM thành công', 'pass');
+        passCount++;
+        runTest2(worker);
+      }
+
+      if (data.type === 'AI_RESULT') {
+        results[data.requestId] = data;
+        handleResult(data, worker);
+      }
+
+      if (data.type === 'AI_ERROR') {
+        log(` AI_ERROR: ${data.message}`, 'fail');
+        failCount++;
+      }
+    };
+
+    worker.onerror = function (err) {
+      log(` Worker error: ${err.message}`, 'fail');
+      failCount++;
+    };
+
+    
+    setTimeout(() => {
+      log('\n' + '='.repeat(50));
+      log(`\n KẾT QUẢ: ${passCount} PASS / ${failCount} FAIL`);
+      if (failCount === 0) {
+        log(' Tất cả bridge tests PASS!\n', 'pass');
+      } else {
+        log(' Có test FAIL, kiểm tra lại bridge.\n', 'fail');
+      }
+      worker.terminate();
+    }, 8000);
+  }
+
+  let testStage = 0;
+
+  function handleResult(data, worker) {
+    testStage++;
+
+    
+    if (testStage === 1) {
+      if (data.bestMove >= 0 && data.bestMove < 225) {
+        log(` Test 2: Single round-trip — bestMove: ${data.bestMove}`, 'pass');
+        passCount++;
+      } else {
+        log(` Test 2: Single round-trip thất bại — bestMove: ${data.bestMove}`, 'fail');
+        failCount++;
+      }
+      runTest3(worker);
+    }
+
+    
+    else if (testStage >= 2 && testStage <= 6) {
+      if (data.bestMove >= 0) {
+        if (testStage === 6) {
+          log(` Test 3: Repeated allocation (5 lần) — tất cả thành công`, 'pass');
+          passCount++;
+          runTest4(worker);
+        }
+      } else {
+        log(` Test 3: Repeated allocation thất bại ở request ${data.requestId}`, 'fail');
+        failCount++;
+      }
+    }
+
+    
+    else if (testStage === 7) {
+      
+      if (data.bestMove !== 0) {
+        log(` Test 4: Offset correctness — AI bỏ qua ô đã có quân, chọn: ${data.bestMove}`, 'pass');
+        passCount++;
+      } else {
+        log(` Test 4: Offset correctness thất bại — AI chọn ô đã có quân`, 'fail');
+        failCount++;
+      }
+      runTest5(worker);
+    }
+
+    
+    else if (testStage === 8) {
+      if (data.bestMove >= 0 && data.bestMove < 225) {
+        log(` Test 5: Reset and reuse — worker hoạt động sau reset, bestMove: ${data.bestMove}`, 'pass');
+        passCount++;
+      } else {
+        log(` Test 5: Reset and reuse thất bại`, 'fail');
+        failCount++;
+      }
+    }
+  }
+
+  // Test 2: Single round-trip
+  function runTest2(worker) {
+    log('\n── Test 2: Single round-trip...', 'info');
+    worker.postMessage({
+      type: 'AI_REQUEST',
+      board: new Array(225).fill(0),
+      playerTurn: 1,
+      sessionId: 1,
+      requestId: ++requestId,
+      depth: 1,
+      timeoutMs: 2000,
+      useAlphaBeta: false
+    });
+  }
+
+  // Test 3: Repeated allocation (5 lần liên tiếp)
+  function runTest3(worker) {
+    log('\n── Test 3: Repeated allocation (5 requests)...', 'info');
+    for (let i = 0; i < 5; i++) {
+      worker.postMessage({
+        type: 'AI_REQUEST',
+        board: new Array(225).fill(0),
+        playerTurn: 1,
+        sessionId: 1,
+        requestId: ++requestId,
+        depth: 1,
+        timeoutMs: 2000,
+        useAlphaBeta: false
+      });
+    }
+  }
+
+  
+  function runTest4(worker) {
+    log('\n── Test 4: Offset correctness...', 'info');
+    const board = new Array(225).fill(0);
+    board[0] = 1; // ô 0 đã có quân
+    worker.postMessage({
+      type: 'AI_REQUEST',
+      board,
+      playerTurn: -1,
+      sessionId: 1,
+      requestId: ++requestId,
+      depth: 1,
+      timeoutMs: 2000,
+      useAlphaBeta: false
+    });
+  }
+
+  
+  function runTest5(worker) {
+    log('\n── Test 5: Reset and reuse (sessionId mới)...', 'info');
+    worker.postMessage({
+      type: 'AI_REQUEST',
+      board: new Array(225).fill(0),
+      playerTurn: 1,
+      sessionId: 99, // sessionId mới
+      requestId: ++requestId,
+      depth: 1,
+      timeoutMs: 2000,
+      useAlphaBeta: false
+    });
+  }
+</script>
+
+</body>
+</html>
