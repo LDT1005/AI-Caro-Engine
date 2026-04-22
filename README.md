@@ -1,4 +1,3 @@
- 
 > Hệ thống trí tuệ nhân tạo chơi cờ Caro đỉnh cao, sử dụng thuật toán Minimax và Alpha-Beta Pruning biên dịch qua WebAssembly.
 
 [![C++](https://img.shields.io/badge/Language-C%2B%2B-00599C?style=flat-square&logo=c%2B%2B)](https://isocpp.org/)
@@ -7,12 +6,14 @@
 [![Status](https://img.shields.io/badge/Status-Development-yellow?style=flat-square)]()
 
 ---
+
 ## 🧐 Mục lục
 1. [Giới thiệu](#-giới-thiệu)
 2. [Tính năng nổi bật](#-tính-năng-nổi-bật)
 3. [Luật chơi (Core Rules)](#-luật-chơi-core-rules)
 4. [Kiến trúc AI & Tối ưu hóa](#-kiến-trúc-ai--tối-ưu-hóa)
 5. [Tech Stack](#-tech-stack)
+
 ---
 
 ## 📖 Giới thiệu
@@ -41,54 +42,59 @@ Dự án tập trung vào việc xây dựng một **Core AI** mạnh mẽ cho t
 * **Bridge:** Emscripten (WebAssembly)
 * **Frontend:** HTML5, CSS3, JavaScript (ES6)
 * **Threading:** Web Workers API
-"
+
+---
+
+## 📁 Cấu trúc thư mục
+
+```txt
 AI-CARO-ENGINE/
-├── dist/                        # 📦 [MỚI] Build Artifacts
+├── dist/                        
 │   └── wasm/
-│       ├── ai.wasm              # File biên dịch cuối cùng do TV2 tạo ra
-│       └── ai.js                # Glue code Emscripten
+│       ├── ai.wasm              
+│       └── ai.js                
 │
-├── benchmark/                   # 📊 [TV4] Đưa ra khỏi src (Tooling/Pipeline)
+├── benchmark/                   
 │   ├── benchmarkLogs.js
-│   └── runner.js                # Script chạy auto
+│   └── runner.js                
 │
-├── heuristic-qa/                # 🧪 [TV3] Đưa ra khỏi src & Quy chuẩn form
+├── heuristic-qa/                
 │   ├── heuristics/
-│   │   └── weights.json         # Bảng trọng số (hoặc .h tùy TV1/TV3 chốt)
+│   │   └── weights.json         
 │   ├── scenarios/
-│   │   └── scenarios.json       # 15 tests chuẩn
+│   │   └── scenarios.json       
 │   └── tools/
 │       ├── generate_scenarios.py
-│       └── explanations.txt     # Giải thích logic cho báo cáo
+│       └── explanations.txt     
 │
-├── src/                         # 💻 SOURCE CODE CHÍNH
+├── src/                         
 │   │
-│   ├── ai-core/                 # 🧑‍💻 [TV1] Lõi Thuật Toán
+│   ├── ai-core/                 
 │   │   ├── ai_core.cpp
 │   │   └── ai_core.h
 │   │
-│   ├── engine-runtime/          # 🧑‍💻 [TV2] Tích Hợp & Game Logic
-│   │   ├── game_engine.cpp      # Quản lý luồng game
-│   │   ├── rules.cpp            # Local check thắng/hòa
-│   │   ├── wasm_bridge.cpp      # Cầu nối C++ và Emscripten
-│   │   ├── runtime_guard.cpp    # Bảo vệ timeout, chống crash
+│   ├── engine-runtime/          
+│   │   ├── game_engine.cpp      
+│   │   ├── rules.cpp            
+│   │   ├── wasm_bridge.cpp      
+│   │   ├── runtime_guard.cpp    
 │   │   └── workers/
-│   │       └── ai-worker.js     # 🎯 TRẢ VỀ TV2: TV2 sở hữu lifecycle worker thật
+│   │       └── ai-worker.js     
 │   │
-│   └── frontend-ui/             # 🧑‍💻 [TV5 - BẠN] Giao Diện & Điều Phối
+│   └── frontend-ui/             
 │       ├── css/
 │       │   └── main.css
 │       ├── js/
-│       │   ├── canvas-board.js  # Render đồ họa
+│       │   ├── canvas-board.js  
 │       │   ├── config.js
-│       │   ├── ui-state.js      # 🎯 ĐỔI TÊN: Nhấn mạnh đây chỉ là View State
+│       │   ├── ui-state.js      
 │       │   ├── main.js
 │       │   ├── ui.js
 │       │   ├── worker-client.js
-│       │   └── ai-adapter.js    # Bọc giao tiếp giữa UI và Worker (Mock/Thật)
+│       │   └── ai-adapter.js    
 │       ├── workers/
-│       │   └── mock-ai-worker.js # TV5 chỉ sở hữu Mock
-│       └── index.html           # File load các script JS (trỏ tới dist/wasm khi chạy thật)
+│       │   └── mock-ai-worker.js 
+│       └── index.html           
 │
 ├── CMakeLists.txt
 └── README.md
