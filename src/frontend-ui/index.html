@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Caro Engine - Technical Showcase</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./frontend-ui/src/css/main.css">
+    <link rel="stylesheet" href="css/main.css">
+    
     <style>
-        /* Kiến trúc UI: Custom Toggles */
+        /* Kiến trúc UI: Custom Toggles & Interaction Logic */
         .ui-toggles { 
             display: flex; 
             gap: 8px; 
@@ -35,7 +36,7 @@
             border-color: var(--accent-color);
         }
 
-        /* LOGIC KHÓA GIAO DIỆN (Mới cập nhật) */
+        /* LOGIC KHÓA GIAO DIỆN: Chống spam click khi AI đang nghĩ */
         .ui-toggles.locked {
             pointer-events: none; /* Chặn click chuột hoàn toàn */
             opacity: 0.5;         /* Hiệu ứng làm mờ để báo hiệu bị khóa */
@@ -129,6 +130,6 @@
         </aside>
     </div>
 
-    <script type="module" src="./frontend-ui/src/js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

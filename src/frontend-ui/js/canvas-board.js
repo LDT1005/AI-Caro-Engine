@@ -1,3 +1,4 @@
+// src/frontend-ui/js/canvas-board.js
 import { CONFIG } from './config.js';
 
 export class CanvasBoard {
@@ -7,6 +8,7 @@ export class CanvasBoard {
         
         // Cấu hình kích thước hiển thị cố định 600px để đồng bộ layout sidebar
         this.displaySize = 600;
+        this.padding = 30; // Khoảng trống để vẽ tọa độ viền (A-O, 1-15)
         this.initCanvas();
     }
 
@@ -20,45 +22,79 @@ export class CanvasBoard {
         this.canvas.style.height = `${this.displaySize}px`;
         
         this.ctx.scale(dpr, dpr);
-        this.cellSize = this.displaySize / CONFIG.BOARD_SIZE;
+        
+        // Tính toán kích thước ô cờ dựa trên vùng vẽ thực tế (đã trừ padding 2 bên)
+        this.cellSize = (this.displaySize - (this.padding * 2)) / CONFIG.BOARD_SIZE;
     }
 
-    // Mapping tọa độ từ Pixel sang ma trận board[row][col] chuẩn xác
+    /**
+     * Mapping tọa độ từ Pixel sang ma trận board[row][col] chuẩn xác
+     * Logic: Trừ đi offset của thẻ canvas và vùng padding trước khi tính toán ô
+     */
     getCellFromMouse(event) {
         const rect = this.canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        const x = event.clientX - rect.left - this.padding;
+        const y = event.clientY - rect.top - this.padding;
         
         const col = Math.floor(x / this.cellSize);
         const row = Math.floor(y / this.cellSize);
         
-        return { row, col };
+        // Chỉ trả về tọa độ nếu click nằm trong phạm vi bàn cờ (không tính vùng tọa độ viền)
+        if (row >= 0 && row < CONFIG.BOARD_SIZE && col >= 0 && col < CONFIG.BOARD_SIZE) {
+            return { row, col };
+        }
+        return null;
     }
 
-    // Xóa sạch canvas trước mỗi frame vẽ mới
     clear() {
         this.ctx.clearRect(0, 0, this.displaySize, this.displaySize);
     }
 
-    // Vẽ lưới bàn cờ 15x15
+    /**
+     * Vẽ hệ thống tọa độ A-O và 1-15 quanh viền bàn cờ phục vụ Demo
+     */
+    drawCoordinates() {
+        this.ctx.fillStyle = '#5c3a21'; // Màu gỗ đậm cho chữ
+        this.ctx.font = 'bold 12px "Roboto Mono", monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        for (let i = 0; i < CONFIG.BOARD_SIZE; i++) {
+            const letter = String.fromCharCode(65 + i); // Cột: A, B, C...
+            const labelPos = this.padding + i * this.cellSize + (this.cellSize / 2);
+            
+            // Vẽ nhãn cột (Cạnh trên & Cạnh dưới)
+            this.ctx.fillText(letter, labelPos, this.padding / 2);
+            this.ctx.fillText(letter, labelPos, this.displaySize - (this.padding / 2));
+            
+            // Vẽ nhãn hàng (Cạnh trái & Cạnh phải)
+            this.ctx.fillText((i + 1).toString(), this.padding / 2, labelPos);
+            this.ctx.fillText((i + 1).toString(), this.displaySize - (this.padding / 2), labelPos);
+        }
+    }
+
+    /**
+     * Vẽ lưới bàn cờ 15x15 bên trong vùng giới hạn bởi padding
+     */
     drawGrid() {
         this.ctx.beginPath();
         this.ctx.strokeStyle = '#8b5a2b'; // Màu gỗ đậm cho đường kẻ
         this.ctx.lineWidth = 1;
 
         for (let i = 0; i <= CONFIG.BOARD_SIZE; i++) {
-            const pos = i * this.cellSize;
-            // Vẽ đường ngang
-            this.ctx.moveTo(0, pos);
-            this.ctx.lineTo(this.displaySize, pos);
-            // Vẽ đường dọc
-            this.ctx.moveTo(pos, 0);
-            this.ctx.lineTo(pos, this.displaySize);
+            const pos = this.padding + (i * this.cellSize);
+            
+            // Vẽ đường ngang (giới hạn trong vùng padding)
+            this.ctx.moveTo(this.padding, pos);
+            this.ctx.lineTo(this.displaySize - this.padding, pos);
+            
+            // Vẽ đường dọc (giới hạn trong vùng padding)
+            this.ctx.moveTo(pos, this.padding);
+            this.ctx.lineTo(pos, this.displaySize - this.padding);
         }
         this.ctx.stroke();
     }
 
-    // Duyệt ma trận và vẽ toàn bộ quân cờ đang có
     drawPieces(board) {
         for (let r = 0; r < CONFIG.BOARD_SIZE; r++) {
             for (let c = 0; c < CONFIG.BOARD_SIZE; c++) {
@@ -69,10 +105,12 @@ export class CanvasBoard {
         }
     }
 
-    // Vẽ một quân cờ (X hoặc O) với hiệu ứng Typography và bóng đổ
+    /**
+     * Vẽ một quân cờ (X hoặc O) với hiệu ứng Typography và bóng đổ chuyên nghiệp
+     */
     drawSinglePiece(row, col, player) {
-        const x = col * this.cellSize + this.cellSize / 2;
-        const y = row * this.cellSize + this.cellSize / 2;
+        const x = this.padding + col * this.cellSize + this.cellSize / 2;
+        const y = this.padding + row * this.cellSize + this.cellSize / 2;
 
         this.ctx.save();
         // Typography: Chữ Inter bold, kích thước chiếm 70% ô cờ
@@ -80,7 +118,7 @@ export class CanvasBoard {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         
-        // Cấu hình Shadow chung cho quân cờ
+        // Hiệu ứng Shadow giúp quân cờ nổi bật, có chiều sâu trên nền gỗ
         this.ctx.shadowBlur = 4;
         this.ctx.shadowOffsetX = 2;
         this.ctx.shadowOffsetY = 2;
@@ -89,24 +127,26 @@ export class CanvasBoard {
         if (player === CONFIG.PLAYER_HUMAN) {
             this.ctx.fillStyle = '#0f172a'; // Màu đen xám mạnh mẽ (X)
             this.ctx.fillText('X', x, y);
-        } else {
+        } else if (player === CONFIG.PLAYER_AI) {
             this.ctx.fillStyle = '#f8fafc'; // Màu trắng sáng (O)
             this.ctx.fillText('O', x, y);
         }
         this.ctx.restore();
     }
 
-    // Hiệu ứng Vi mô: Vòng tròn highlight đứt nét cho nước đi mới nhất
+    /**
+     * Hiệu ứng Vi mô: Vòng tròn highlight đứt nét cho nước đi mới nhất
+     */
     drawHighlight(row, col, player) {
-        const x = col * this.cellSize + this.cellSize / 2;
-        const y = row * this.cellSize + this.cellSize / 2;
+        const x = this.padding + col * this.cellSize + this.cellSize / 2;
+        const y = this.padding + row * this.cellSize + this.cellSize / 2;
         const radius = this.cellSize * 0.4;
 
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.arc(x, y, radius, 0, Math.PI * 2);
         
-        // Màu sắc phản hồi: Xanh cho người, Đỏ cho AI
+        // Màu sắc phản hồi: Xanh dương cho người, Đỏ cho AI
         this.ctx.strokeStyle = player === CONFIG.PLAYER_HUMAN ? '#3b82f6' : '#ef4444'; 
         this.ctx.lineWidth = 2;
         
@@ -121,15 +161,49 @@ export class CanvasBoard {
         this.ctx.restore();
     }
 
-    // Hàm tổng hợp để render toàn bộ bàn cờ từ GameState
-    render(state) {
+    /**
+     * Giai đoạn 4: Vẽ bàn cờ trực tiếp từ Snapshot của Engine
+     * Đảm bảo tính trung thực tuyệt đối giữa UI và Lõi C++ của TV2
+     */
+    renderFromSnapshot(boardMatrix, lastMove = null) {
         this.clear();
-        this.drawGrid();
-        this.drawPieces(state.board);
         
-        // Nếu có nước đi cuối cùng, thực hiện vẽ highlight đè lên trên
-        if (state.lastMove) {
-            this.drawHighlight(state.lastMove.row, state.lastMove.col, state.lastMove.player);
+        // 1. Vẽ nền gỗ cho vùng biên (padding)
+        this.ctx.fillStyle = '#d1ad70';
+        this.ctx.fillRect(0, 0, this.displaySize, this.displaySize);
+        
+        // 2. Vẽ nền chính cho vùng chơi (Board Background)
+        this.ctx.fillStyle = '#e2c18d';
+        this.ctx.fillRect(
+            this.padding, 
+            this.padding, 
+            this.displaySize - (this.padding * 2), 
+            this.displaySize - (this.padding * 2)
+        );
+
+        // 3. Vẽ các lớp hỗ trợ quan sát
+        this.drawCoordinates();
+        this.drawGrid();
+
+        // 4. Duyệt và vẽ các quân cờ từ Snapshot
+        for (let r = 0; r < CONFIG.BOARD_SIZE; r++) {
+            for (let c = 0; c < CONFIG.BOARD_SIZE; c++) {
+                if (boardMatrix[r][c] !== CONFIG.EMPTY) {
+                    this.drawSinglePiece(r, c, boardMatrix[r][c]);
+                }
+            }
         }
+
+        // 5. Highlight nước đi cuối cùng nếu có dữ liệu từ Engine
+        if (lastMove) {
+            this.drawHighlight(lastMove.row, lastMove.col, lastMove.player);
+        }
+    }
+
+    /**
+     * Hàm render tiêu chuẩn gọi từ luồng chính (Main Thread)
+     */
+    render(state) {
+        this.renderFromSnapshot(state.board, state.lastMove);
     }
 }
