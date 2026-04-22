@@ -1,8 +1,4 @@
 #include <iostream>
-<<<<<<< HEAD
-#include <vector>
-=======
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
 #include <chrono>
 #include <cmath>
 #include <algorithm>
@@ -18,11 +14,8 @@ using namespace std::chrono;
 
 const int BOARD_SIZE = 15;
 const int EMPTY = 0;
-<<<<<<< HEAD
-=======
 const long INF = 999999999;
 const long WIN_SCORE = 100000000;
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
 
 struct AIMove {
     int row;
@@ -31,10 +24,7 @@ struct AIMove {
     long nodes_evaluated;
     float time_ms;
     bool is_timeout;
-<<<<<<< HEAD
-=======
     int depth_reached;
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
 };
 
 struct Candidate {
@@ -43,71 +33,6 @@ struct Candidate {
     int c;
 };
 
-<<<<<<< HEAD
-bool compareCandidates(const Candidate& a, const Candidate& b) {
-    return a.score > b.score;
-}
-
-vector<Candidate> get_candidates(int board[BOARD_SIZE][BOARD_SIZE]) {
-    vector<pair<int, int>> empty_cells;
-    bool has_piece = false;
-
-    for (int r = 0; r < BOARD_SIZE; ++r) {
-        for (int c = 0; c < BOARD_SIZE; ++c) {
-            if (board[r][c] == EMPTY) {
-                empty_cells.push_back({r, c});
-            } else {
-                has_piece = true;
-            }
-        }
-    }
-
-    if (!has_piece) {
-        return {{0, 7, 7}}; 
-    }
-
-    vector<Candidate> candidates;
-    for (auto& cell : empty_cells) {
-        int r = cell.first;
-        int c = cell.second;
-        
-        int min_r = max(0, r - 2);
-        int max_r = min(BOARD_SIZE - 1, r + 2);
-        int min_c = max(0, c - 2);
-        int max_c = min(BOARD_SIZE - 1, c + 2);
-        
-        bool found_near = false;
-        for (int i = min_r; i <= max_r; ++i) {
-            for (int j = min_c; j <= max_c; ++j) {
-                if (board[i][j] != EMPTY) {
-                    found_near = true;
-                    break;
-                }
-            }
-            if (found_near) break;
-        }
-        
-        if (found_near) {
-            int score = -(abs(r - 7) + abs(c - 7));
-            candidates.push_back({score, r, c});
-        }
-    }
-
-    sort(candidates.begin(), candidates.end(), compareCandidates);
-    return candidates;
-}
-
-long evaluate_board_mock(int board[BOARD_SIZE][BOARD_SIZE], int ai_player) {
-    int opponent = (ai_player == 1) ? 2 : 1;
-    long score = 0;
-    for (int r = 0; r < BOARD_SIZE; ++r) {
-        for (int c = 0; c < BOARD_SIZE; ++c) {
-            if (board[r][c] == ai_player) {
-                score += 10;
-            } else if (board[r][c] == opponent) {
-                score -= 10;
-            }
-=======
 int check_win(int board[BOARD_SIZE][BOARD_SIZE]) {
     int dr[] = {1, 0, 1, 1};
     int dc[] = {0, 1, 1, -1};
@@ -257,7 +182,6 @@ long evaluate_board(int board[BOARD_SIZE][BOARD_SIZE], int ai_player) {
         for (int c = 0; c < BOARD_SIZE; c++) {
             if (board[r][c] == ai_player) score += evaluate_move(board, r, c, ai_player);
             if (board[r][c] == opponent) score -= evaluate_move(board, r, c, opponent);
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
         }
     }
     return score;
@@ -276,12 +200,6 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
 
     nodes++;
 
-<<<<<<< HEAD
-    if (depth == 0) return evaluate_board_mock(board, ai_player);
-
-    vector<Candidate> candidates = get_candidates(board);
-    if (candidates.empty()) return evaluate_board_mock(board, ai_player);
-=======
     int winner = check_win(board);
     if (winner != 0) {
         if (winner == ai_player) return WIN_SCORE + depth;
@@ -295,20 +213,10 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
     get_candidates(board, candidates, candidate_count, is_maximizing ? ai_player : (ai_player == 1 ? 2 : 1));
     
     if (candidate_count == 0) return evaluate_board(board, ai_player);
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
 
     int opponent = (ai_player == 1) ? 2 : 1;
 
     if (is_maximizing) {
-<<<<<<< HEAD
-        long max_eval = -999999999;
-        for (auto& move : candidates) {
-            board[move.r][move.c] = ai_player;
-            int child_best_r, child_best_c;
-            
-            long eval_score = minimax(board, depth - 1, alpha, beta, false, ai_player, start_time, time_limit_ms, nodes, timeout_flag, child_best_r, child_best_c, use_alpha_beta);
-            
-=======
         long max_eval = -INF;
         for (int i = 0; i < candidate_count; i++) {
             auto& move = candidates[i];
@@ -316,7 +224,6 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
             board[move.r][move.c] = ai_player;
             int child_best_r, child_best_c;
             long eval_score = minimax(board, depth - 1, alpha, beta, false, ai_player, start_time, time_limit_ms, nodes, timeout_flag, child_best_r, child_best_c, use_alpha_beta);
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
             board[move.r][move.c] = EMPTY;
             
             if (timeout_flag) return 0; 
@@ -333,15 +240,6 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
         }
         return max_eval;
     } else {
-<<<<<<< HEAD
-        long min_eval = 999999999;
-        for (auto& move : candidates) {
-            board[move.r][move.c] = opponent;
-            int child_best_r, child_best_c;
-            
-            long eval_score = minimax(board, depth - 1, alpha, beta, true, ai_player, start_time, time_limit_ms, nodes, timeout_flag, child_best_r, child_best_c, use_alpha_beta);
-            
-=======
         long min_eval = INF;
         for (int i = 0; i < candidate_count; i++) {
             auto& move = candidates[i];
@@ -349,7 +247,6 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
             board[move.r][move.c] = opponent;
             int child_best_r, child_best_c;
             long eval_score = minimax(board, depth - 1, alpha, beta, true, ai_player, start_time, time_limit_ms, nodes, timeout_flag, child_best_r, child_best_c, use_alpha_beta);
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
             board[move.r][move.c] = EMPTY;
             
             if (timeout_flag) return 0;
@@ -375,34 +272,20 @@ AIMove static_move_result;
 EMSCRIPTEN_KEEPALIVE
 AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeout_ms, bool use_alpha_beta) {
     int board[BOARD_SIZE][BOARD_SIZE];
-<<<<<<< HEAD
-    for(int r = 0; r < BOARD_SIZE; r++) {
-=======
     for (int r = 0; r < BOARD_SIZE; r++) {
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
         for(int c = 0; c < BOARD_SIZE; c++) {
             board[r][c] = flat_board[r * BOARD_SIZE + c];
         }
     }
 
     auto start_time = high_resolution_clock::now();
-<<<<<<< HEAD
-    float time_limit_ms = (float)timeout_ms - 50.0f; 
-=======
     float time_limit_ms = (float)timeout_ms - 50.0f;
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
     
     long total_nodes = 0;
     bool timeout_flag = false;
     
     int global_best_r = -1;
     int global_best_c = -1;
-<<<<<<< HEAD
-    long global_best_score = -999999999;
-    
-    vector<Candidate> candidates = get_candidates(board);
-    if(!candidates.empty()) {
-=======
     long global_best_score = -INF;
     int global_depth_reached = 0;
     
@@ -410,7 +293,6 @@ AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeo
     int candidate_count = 0;
     get_candidates(board, candidates, candidate_count, player_turn);
     if (candidate_count > 0) {
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
         global_best_r = candidates[0].r;
         global_best_c = candidates[0].c;
     }
@@ -421,11 +303,7 @@ AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeo
         bool local_timeout = false;
         
         long depth_score = minimax(
-<<<<<<< HEAD
-            board, current_depth, -999999999, 999999999, true, player_turn, 
-=======
             board, current_depth, -INF, INF, true, player_turn, 
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
             start_time, time_limit_ms, total_nodes, local_timeout, 
             depth_best_r, depth_best_c, use_alpha_beta
         );
@@ -437,12 +315,9 @@ AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeo
             global_best_r = depth_best_r;
             global_best_c = depth_best_c;
             global_best_score = depth_score;
-<<<<<<< HEAD
-=======
             global_depth_reached = current_depth;
             
             if (depth_score >= WIN_SCORE - 100) break;
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
         }
     }
 
@@ -455,10 +330,7 @@ AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeo
     static_move_result.nodes_evaluated = total_nodes;
     static_move_result.time_ms = elapsed_ms;
     static_move_result.is_timeout = timeout_flag;
-<<<<<<< HEAD
-=======
     static_move_result.depth_reached = global_depth_reached;
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
 
     return &static_move_result; 
 }
@@ -469,9 +341,6 @@ EMSCRIPTEN_KEEPALIVE long get_move_score() { return static_move_result.score; }
 EMSCRIPTEN_KEEPALIVE long get_nodes() { return static_move_result.nodes_evaluated; }
 EMSCRIPTEN_KEEPALIVE float get_time_ms() { return static_move_result.time_ms; }
 EMSCRIPTEN_KEEPALIVE bool get_is_timeout() { return static_move_result.is_timeout; }
-<<<<<<< HEAD
-=======
 EMSCRIPTEN_KEEPALIVE int get_depth_reached() { return static_move_result.depth_reached; }
->>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
 
 }
