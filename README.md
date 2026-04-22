@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+# AI-Caro-Engine
+=======
+>>>>>>> ai-core
 # 🚀 AI Caro Engine (15x15)
 
 > Hệ thống trí tuệ nhân tạo chơi cờ Caro đỉnh cao, sử dụng thuật toán Minimax và Alpha-Beta Pruning biên dịch qua WebAssembly.
@@ -79,3 +85,7 @@ Dự án tập trung vào việc xây dựng một **Core AI** mạnh mẽ cho t
    };
    AIMove get_best_move(int board[15][15], int player_turn, int max_depth, int timeout_ms, bool use_alpha_beta);
 
+<<<<<<< HEAD
+=======
+>>>>>>> a642836aad0c3d6124dfa608edfe60eb1d8ef1b1
+>>>>>>> ai-core
