@@ -1940,6 +1940,10 @@
         [
           10,
           6
+        ],
+        [
+          10,
+          1
         ]
       ],
       "Expected_Priority": "Nước thắng tức thì (năm ngang).",
@@ -4320,6 +4324,22 @@
         [
           7,
           9
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          6,
+          8
+        ],
+        [
+          8,
+          6
+        ],
+        [
+          8,
+          8
         ]
       ],
       "Expected_Priority": "Đối xứng quanh trung tâm — chấp nhận bất kỳ nước trong tập tương đương.",

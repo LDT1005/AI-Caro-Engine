@@ -30,8 +30,7 @@ inline constexpr std::int64_t SCORE_OPEN_TWO = 120LL;
 // --- Phòng thủ: đe dọa trực tiếp từ đối thủ (phải >= tấn công trung bình) ---
 // Chặn “bốn mở một đầu” của địch: quan trọng hơn tạo Open Three cho mình (8000).
 inline constexpr std::int64_t BLOCK_HALF_OPEN_FOUR = 52000LL;
-// Đối thủ có Open Four / năm liên tiếp: mức tối đa ngang tầm Open Four.
-inline constexpr std::int64_t BLOCK_OPEN_FOUR_OR_WIN = 120000LL;
+inline constexpr std::int64_t BLOCK_OPEN_FOUR_OR_WIN = 2000000LL;
 // Ba mở / nửa mở đối thủ — vẫn xếp dưới chặn tứ nhưng trên Open Two tấn công.
 inline constexpr std::int64_t BLOCK_OPEN_THREE = 7500LL;
 inline constexpr std::int64_t BLOCK_HALF_OPEN_THREE = 1100LL;
