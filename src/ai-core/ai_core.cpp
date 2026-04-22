@@ -1,31 +1,15 @@
+#include "ai_core.h"
 #include <iostream>
 #include <chrono>
 #include <cmath>
 #include <algorithm>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#else
-#define EMSCRIPTEN_KEEPALIVE
-#endif
-
 using namespace std;
 using namespace std::chrono;
 
-const int BOARD_SIZE = 15;
 const int EMPTY = 0;
 const long INF = 999999999;
 const long WIN_SCORE = 100000000;
-
-struct AIMove {
-    int row;
-    int col;
-    long score;
-    long nodes_evaluated;
-    float time_ms;
-    bool is_timeout;
-    int depth_reached;
-};
 
 struct Candidate {
     int score;
@@ -265,19 +249,9 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
     }
 }
 
-extern "C" {
-
-AIMove static_move_result;
-
-EMSCRIPTEN_KEEPALIVE
-AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeout_ms, bool use_alpha_beta) {
-    int board[BOARD_SIZE][BOARD_SIZE];
-    for (int r = 0; r < BOARD_SIZE; r++) {
-        for(int c = 0; c < BOARD_SIZE; c++) {
-            board[r][c] = flat_board[r * BOARD_SIZE + c];
-        }
-    }
-
+// Hàm Wrapper đóng gói Iterative Deepening để trả về kết quả
+AIMove run_ai_search(int board[BOARD_SIZE][BOARD_SIZE], int player_turn, int max_depth, int timeout_ms, bool use_alpha_beta) {
+    AIMove result;
     auto start_time = high_resolution_clock::now();
     float time_limit_ms = (float)timeout_ms - 50.0f;
     
@@ -324,23 +298,13 @@ AIMove* get_best_move(int* flat_board, int player_turn, int max_depth, int timeo
     auto end_time = high_resolution_clock::now();
     float elapsed_ms = duration_cast<milliseconds>(end_time - start_time).count();
 
-    static_move_result.row = global_best_r;
-    static_move_result.col = global_best_c;
-    static_move_result.score = global_best_score;
-    static_move_result.nodes_evaluated = total_nodes;
-    static_move_result.time_ms = elapsed_ms;
-    static_move_result.is_timeout = timeout_flag;
-    static_move_result.depth_reached = global_depth_reached;
+    result.row = global_best_r;
+    result.col = global_best_c;
+    result.score = global_best_score;
+    result.nodes_evaluated = total_nodes;
+    result.time_ms = elapsed_ms;
+    result.is_timeout = timeout_flag;
+    result.depth_reached = global_depth_reached;
 
-    return &static_move_result; 
-}
-
-EMSCRIPTEN_KEEPALIVE int get_move_row() { return static_move_result.row; }
-EMSCRIPTEN_KEEPALIVE int get_move_col() { return static_move_result.col; }
-EMSCRIPTEN_KEEPALIVE long get_move_score() { return static_move_result.score; }
-EMSCRIPTEN_KEEPALIVE long get_nodes() { return static_move_result.nodes_evaluated; }
-EMSCRIPTEN_KEEPALIVE float get_time_ms() { return static_move_result.time_ms; }
-EMSCRIPTEN_KEEPALIVE bool get_is_timeout() { return static_move_result.is_timeout; }
-EMSCRIPTEN_KEEPALIVE int get_depth_reached() { return static_move_result.depth_reached; }
-
+    return result;
 }

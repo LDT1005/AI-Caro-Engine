@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Caro Engine - Technical Showcase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./frontend-ui/src/css/main.css">
+    <style>
+        /* Kiến trúc UI: Custom Toggles */
+        .ui-toggles { 
+            display: flex; 
+            gap: 8px; 
+        }
+        .toggle-btn {
+            flex: 1; 
+            padding: 10px; 
+            background: var(--bg-main);
+            border: 1px solid var(--border-color); 
+            color: var(--text-secondary);
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-family: var(--font-ui);
+            font-size: 14px; 
+            font-weight: 500; 
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover { 
+            border-color: var(--accent-color); 
+            color: var(--text-primary); 
+        }
+        .toggle-btn.active {
+            background: var(--accent-color); 
+            color: #fff; 
+            border-color: var(--accent-color);
+        }
+
+        /* LOGIC KHÓA GIAO DIỆN (Mới cập nhật) */
+        .ui-toggles.locked {
+            pointer-events: none; /* Chặn click chuột hoàn toàn */
+            opacity: 0.5;         /* Hiệu ứng làm mờ để báo hiệu bị khóa */
+            filter: grayscale(0.5);
+        }
+
+        select:disabled {
+            background-color: #334155;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <main class="board-section">
+            <div class="canvas-container">
+                <canvas id="game-canvas"></canvas>
+            </div>
+        </main>
+
+        <aside class="sidebar">
+            <div class="panel-header">
+                <h1>AI CARO ENGINE</h1>
+                <p class="subtitle">Minimax & Alpha-Beta Pruning</p>
+            </div>
+
+            <div class="status-bar">
+                <span id="turn-status" class="status-text">Ready to play</span>
+                <div id="ai-spinner" class="spinner" style="display: none;"></div>
+            </div>
+
+            <section class="control-panel panel-box">
+                <h2>Control Panel</h2>
+                
+                <div class="control-group">
+                    <label for="depth-select">Max Depth:</label>
+                    <select id="depth-select">
+                        <option value="1" selected>Depth 1</option>
+                        <option value="2">Depth 2</option>
+                        <option value="3">Depth 3</option>
+                        <option value="4">Depth 4</option>
+                        <option value="5">Depth 5</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Algorithm Mode:</label>
+                    <div class="ui-toggles">
+                        <button type="button" class="toggle-btn" data-value="minimax">Minimax</button>
+                        <button type="button" class="toggle-btn" data-value="alpha-beta">Alpha-Beta</button>
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="btn-primary">Reset Game</button>
+            </section>
+
+            <section class="dashboard-metrics panel-box">
+                <h2>Live Metrics</h2>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Mode</span>
+                    <span id="metric-mode" class="metric-value">None</span>
+                </div>
+
+                <div class="metric-row">
+                    <span class="metric-label">Nodes Evaluated</span>
+                    <span id="metric-nodes" class="metric-value">0</span>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Time (ms)</span>
+                    <span id="metric-time" class="metric-value">0</span>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Heuristic Score</span>
+                    <span id="metric-score" class="metric-value">0</span>
+                </div>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Achieved Depth</span>
+                    <span id="metric-depth" class="metric-value">0</span>
+                </div>
+
+                <div class="metric-row">
+                    <span class="metric-label">Timeout</span>
+                    <span id="metric-timeout" class="metric-value false">False</span>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <script type="module" src="./frontend-ui/src/js/main.js"></script>
+</body>
+</html>
