@@ -1,0 +1,208 @@
+:root {
+    /* Color Palette - Modern Dark Theme for Dashboard */
+    --bg-main: #0f172a;
+    --bg-panel: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-color: #3b82f6;
+    --accent-hover: #2563eb;
+    --border-color: #334155;
+    
+    /* Board Colors - High Contrast Wood/Classic */
+    --board-bg: #e2c18d;
+    --board-line: #8b5a2b;
+    
+    /* Typography */
+    --font-ui: 'Inter', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-ui);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+/* --- Layout --- */
+.app-layout {
+    display: grid;
+    grid-template-columns: minmax(500px, 720px) 360px;
+    gap: 32px;
+    width: 100%;
+    max-width: 1150px;
+}
+
+@media (max-width: 950px) {
+    .app-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- Board Section --- */
+.board-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.canvas-container {
+    background-color: var(--board-bg);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    padding: 10px;
+}
+
+/* --- Sidebar & Panels --- */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.panel-box {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.panel-box h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+/* --- Controls --- */
+.control-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-group label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+select {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-ui);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+select:hover, select:focus {
+    border-color: var(--accent-color);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 8px;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+}
+
+/* --- Dashboard Metrics (Requirement 5) --- */
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.metric-row:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.metric-value {
+    /* Đảm bảo Font Monospace và Tabular Nums chống giật layout */
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--accent-color);
+}
+
+.metric-value.false { color: #10b981; } 
+.metric-value.true { color: #ef4444; }  
+
+/* --- Status & Spinner (Requirement 5) --- */
+.status-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    padding: 12px 16px;
+    border-radius: 8px;
+}
+
+.status-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--accent-color);
+}
+
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
