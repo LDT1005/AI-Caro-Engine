@@ -61,7 +61,7 @@ function getBestMoveFromEngine(
 
   try {
 
-    /* 🔥 FIX 1 — đảm bảo Int32Array */
+   
 
     const intBoard =
       new Int32Array(board);
@@ -71,7 +71,7 @@ function getBestMoveFromEngine(
       ptr >> 2
     );
 
-    /* 🔥 FIX 2 — truyền đủ tham số */
+   
 
     Module._get_best_move(
       ptr,
@@ -81,7 +81,7 @@ function getBestMoveFromEngine(
       USE_ALPHA_BETA | 0
     );
 
-    /* 🔥 FIX 3 — đọc kết quả */
+    
 
     const row =
       Module._get_move_row() | 0;
@@ -89,7 +89,7 @@ function getBestMoveFromEngine(
     const col =
       Module._get_move_col() | 0;
 
-    /* 🔥 FIX 4 — validate kết quả */
+    
 
     if (
       row < 0 || row >= 15 ||
@@ -97,7 +97,7 @@ function getBestMoveFromEngine(
     ) {
 
       console.warn(
-        '⚠️ AI trả move không hợp lệ:',
+        ' AI trả move không hợp lệ:',
         row,
         col
       );
@@ -134,7 +134,7 @@ async function runTests() {
   if (!fs.existsSync(filePath)) {
 
     console.error(
-      `❌ Không tìm thấy file: ${filePath}`
+      ` Không tìm thấy file: ${filePath}`
     );
 
     process.exit(1);
@@ -153,7 +153,7 @@ async function runTests() {
     raw.scenarios;
 
   console.log(
-    `\n📋 Đọc được ${tests.length} test\n`
+    `\n Đọc được ${tests.length} test\n`
   );
 
   console.log('='.repeat(60));
@@ -277,13 +277,13 @@ async function runTests() {
   );
 
   console.log(
-    `\n📊 KẾT QUẢ: ` +
+    `\n KẾT QUẢ: ` +
     `${totalPass}/${tests.length} PASS\n`
   );
 
   if (failedTests.length > 0) {
 
-    console.log('❌ Các test FAIL:');
+    console.log(' Các test FAIL:');
 
     failedTests.forEach(t => {
 
@@ -301,7 +301,7 @@ async function runTests() {
     );
 
   console.log(
-    `\n📈 Tỉ lệ pass: ${rate}%`
+    `\n Tỉ lệ pass: ${rate}%`
   );
 
 }
