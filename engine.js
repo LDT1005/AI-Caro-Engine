@@ -30,7 +30,6 @@ class Engine {
     this._emit();
   }
 
-
   isThinking() {
     return this._isThinking;
   }
@@ -66,6 +65,9 @@ class Engine {
   }
 
   makeMove(index) {
+    // 🔥 enforce human turn
+    if (this.currentPlayer !== this.config.humanPlayer) return false;
+
     if (this.gameStatus !== 'ONGOING') return false;
     if (!this.isValidMove(index)) return false;
     if (this._isThinking) return false;
@@ -87,11 +89,21 @@ class Engine {
     }
 
     this.currentPlayer *= -1;
+
+    // 🔥 tăng requestId khi chuẩn bị gọi AI
+    this.requestId++;
+
     this._emit();
     return true;
   }
 
   makeAIMove(index, metricsData = {}) {
+    // 🔥 enforce AI turn
+    if (this.currentPlayer === this.config.humanPlayer) {
+      this._isThinking = false;
+      return;
+    }
+
     if (this.gameStatus !== 'ONGOING') {
       this._isThinking = false;
       this._emit();
@@ -108,7 +120,6 @@ class Engine {
     this.board[index] = this.currentPlayer;
     this.lastMoveIndex = index;
     this.moveCount++;
-
 
     this._emitMetrics({
       sessionId: this.sessionId,
@@ -140,6 +151,7 @@ class Engine {
 
     this.currentPlayer *= -1;
     this._isThinking = false;
+
     this._emit();
   }
 
@@ -147,7 +159,6 @@ class Engine {
     this._isThinking = val;
     this._emit();
   }
-
 
   isValidMove(index) {
     return (

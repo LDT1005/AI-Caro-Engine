@@ -1,164 +1,309 @@
-
 const fs = require('fs');
 
-const filePath = process.argv[2] || 'scenario_tests.json';
+const Module = require('./ai.js');
 
-if (!fs.existsSync(filePath)) {
-  console.error(` Không tìm thấy file: ${filePath}`);
-  console.error(`   Cách dùng: node test_runner.js scenario_tests.json`);
-  process.exit(1);
-}
+/* ===============================
+   WAIT FOR WASM READY
+================================ */
 
-const tests = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-console.log(`\n📋 Đọc được ${tests.length} test từ ${filePath}\n`);
-console.log('='.repeat(60));
-
-
-function isValidMove(board, index) {
-  return index >= 0 && index < 225 && board[index] === 0;
-}
-
-function getCell(board, row, col) {
-  if (row < 0 || row >= 15 || col < 0 || col >= 15) return null;
-  return board[row * 15 + col];
-}
-
-function checkWin(board, index) {
-  const player = board[index];
-  const row = Math.floor(index / 15);
-  const col = index % 15;
-
-  const directions = [
-    [1, 0],
-    [0, 1],
-    [1, 1],
-    [1, -1]
-  ];
-
-  for (const [dx, dy] of directions) {
-    let count = 1;
-
-    let r = row + dx;
-    let c = col + dy;
-    while (getCell(board, r, c) === player) {
-      count++;
-      r += dx;
-      c += dy;
-    }
-
-    r = row - dx;
-    c = col - dy;
-    while (getCell(board, r, c) === player) {
-      count++;
-      r -= dx;
-      c -= dy;
-    }
-
-    if (count >= 5) return true;
-  }
-
-  return false;
-}
-
-function checkDraw(board) {
-  return board.filter(x => x !== 0).length >= 225;
-}
-
-let totalPass = 0;
-let totalFail = 0;
-const failedTests = [];
-
-for (const test of tests) {
-  const {
-    Test_ID,
-    Board_State,
-    Player_Turn,
-    Acceptable_Moves,
-    Expected_Priority,
-    Group
-  } = test;
-
-  let result = null;
-  let reason = '';
-
-  try {
-    if (!Array.isArray(Board_State) || Board_State.length !== 225) {
-      throw new Error('Board_State phải là mảng 225 phần tử');
-    }
-
-    if (Acceptable_Moves === 'INVALID') {
-      const hasInvalid = Board_State.some((v, i) =>
-        v !== 0 && !isValidMove(Board_State, i)
-      );
-      result = hasInvalid ? 'PASS' : 'FAIL';
-      reason = result === 'FAIL' ? 'Không phát hiện invalid move đúng' : '';
-
-    } else if (Expected_Priority === 'WIN') {
-      const lastMove = Board_State.lastIndexOf(Player_Turn);
-      const won = lastMove !== -1 && checkWin(Board_State, lastMove);
-      result = won ? 'PASS' : 'FAIL';
-      reason = result === 'FAIL' ? 'Không phát hiện thắng đúng' : '';
-
-    } else if (Expected_Priority === 'DRAW') {
-      const draw = checkDraw(Board_State);
-      result = draw ? 'PASS' : 'FAIL';
-      reason = result === 'FAIL' ? 'Không phát hiện hòa đúng' : '';
-
+function waitForWasmReady() {
+  return new Promise(resolve => {
+    if (Module.calledRun) {
+      resolve();
     } else {
-      let bestMove = -1;
-      for (let i = 0; i < 225; i++) {
-        if (Board_State[i] === 0) {
-          bestMove = i;
-          break;
-        }
-      }
-
-      const acceptable = Array.isArray(Acceptable_Moves)
-        ? Acceptable_Moves
-        : [Acceptable_Moves];
-
-      result = acceptable.includes(bestMove) ? 'PASS' : 'FAIL';
-      reason = result === 'FAIL'
-        ? `AI chọn ${bestMove}, cần chọn trong [${acceptable.join(', ')}]`
-        : '';
+      Module.onRuntimeInitialized = () => {
+        resolve();
+      };
     }
-
-  } catch (err) {
-    result = 'ERROR';
-    reason = err.message;
-  }
-
-  // In kết quả
-  const icon = result === 'PASS' ? '✅' : result === 'ERROR' ? '⚠️' : '❌';
-  const groupLabel = Group ? `[${Group}]` : '';
-  console.log(`${icon} ${Test_ID} ${groupLabel}`);
-  if (reason) console.log(`   └─ ${reason}`);
-
-  if (result === 'PASS') {
-    totalPass++;
-  } else {
-    totalFail++;
-    failedTests.push({ Test_ID, reason });
-  }
-}
-
-console.log('\n' + '='.repeat(60));
-console.log(`\n KẾT QUẢ: ${totalPass}/${tests.length} PASS\n`);
-
-if (failedTests.length > 0) {
-  console.log(' Các test FAIL:');
-  failedTests.forEach(t => {
-    console.log(`   - ${t.Test_ID}: ${t.reason}`);
   });
 }
 
-const rate = Math.round((totalPass / tests.length) * 100);
-console.log(`\n Tỉ lệ pass: ${rate}%`);
+/* ===============================
+   UTILS
+================================ */
 
-if (rate === 100) {
-  console.log(' Pass 100% — đạt KPI TV2!\n');
-} else if (rate >= 90) {
-  console.log(' Pass >= 90% — đạt KPI TV3!\n');
-} else {
-  console.log('  Chưa đạt KPI, cần kiểm tra lại engine.\n');
+function flattenBoard(board2D) {
+  return board2D.flat();
 }
+
+function rcToIndex(row, col) {
+  return row * 15 + col;
+}
+
+function indexToRC(index) {
+  return [
+    Math.floor(index / 15),
+    index % 15
+  ];
+}
+
+/* ===============================
+   CONFIG
+================================ */
+
+const DEPTH = 5;
+const TIMEOUT = 2000;
+const USE_ALPHA_BETA = 1;
+
+/* ===============================
+   CALL WASM AI (FIXED VERSION)
+================================ */
+
+function getBestMoveFromEngine(
+  board,
+  playerTurn
+) {
+
+  const ptr =
+    Module._malloc(
+      board.length * 4
+    );
+
+  try {
+
+    /* 🔥 FIX 1 — đảm bảo Int32Array */
+
+    const intBoard =
+      new Int32Array(board);
+
+    Module.HEAP32.set(
+      intBoard,
+      ptr >> 2
+    );
+
+    /* 🔥 FIX 2 — truyền đủ tham số */
+
+    Module._get_best_move(
+      ptr,
+      playerTurn | 0,
+      DEPTH | 0,
+      TIMEOUT | 0,
+      USE_ALPHA_BETA | 0
+    );
+
+    /* 🔥 FIX 3 — đọc kết quả */
+
+    const row =
+      Module._get_move_row() | 0;
+
+    const col =
+      Module._get_move_col() | 0;
+
+    /* 🔥 FIX 4 — validate kết quả */
+
+    if (
+      row < 0 || row >= 15 ||
+      col < 0 || col >= 15
+    ) {
+
+      console.warn(
+        '⚠️ AI trả move không hợp lệ:',
+        row,
+        col
+      );
+
+      return -1;
+
+    }
+
+    return rcToIndex(
+      row,
+      col
+    );
+
+  }
+  finally {
+
+    Module._free(ptr);
+
+  }
+
+}
+
+/* ===============================
+   MAIN
+================================ */
+
+async function runTests() {
+
+  await waitForWasmReady();
+
+  const filePath =
+    process.argv[2] || 'scenarios.json';
+
+  if (!fs.existsSync(filePath)) {
+
+    console.error(
+      `❌ Không tìm thấy file: ${filePath}`
+    );
+
+    process.exit(1);
+
+  }
+
+  const raw =
+    JSON.parse(
+      fs.readFileSync(
+        filePath,
+        'utf8'
+      )
+    );
+
+  const tests =
+    raw.scenarios;
+
+  console.log(
+    `\n📋 Đọc được ${tests.length} test\n`
+  );
+
+  console.log('='.repeat(60));
+
+  let totalPass = 0;
+
+  const failedTests = [];
+
+  for (const test of tests) {
+
+    const {
+      Test_ID,
+      Board_State,
+      Player_Turn,
+      Acceptable_Moves,
+      Group
+    } = test;
+
+    let result = null;
+    let reason = '';
+
+    try {
+
+      let board =
+        flattenBoard(Board_State);
+
+      if (board.length !== 225) {
+
+        throw new Error(
+          'Board phải có 225 ô'
+        );
+
+      }
+
+      const acceptableIndices =
+        Acceptable_Moves.map(
+          ([r,c]) =>
+            rcToIndex(r,c)
+        );
+
+      const bestMove =
+        getBestMoveFromEngine(
+          board,
+          Player_Turn
+        );
+
+      if (
+        acceptableIndices.includes(
+          bestMove
+        )
+      ) {
+
+        result = 'PASS';
+
+      }
+      else {
+
+        const [r,c] =
+          indexToRC(bestMove);
+
+        result = 'FAIL';
+
+        reason =
+          `AI chọn (${r},${c}) ` +
+          `không nằm trong ` +
+          `[${acceptableIndices.join(', ')}]`;
+
+      }
+
+    }
+    catch (err) {
+
+      result = 'ERROR';
+
+      reason = err.message;
+
+    }
+
+    const icon =
+      result === 'PASS'
+        ? '✅'
+        : result === 'ERROR'
+        ? '⚠️'
+        : '❌';
+
+    const groupLabel =
+      Group
+        ? `[${Group}]`
+        : '';
+
+    console.log(
+      `${icon} ${Test_ID} ${groupLabel}`
+    );
+
+    if (reason) {
+
+      console.log(
+        `   └─ ${reason}`
+      );
+
+    }
+
+    if (result === 'PASS') {
+
+      totalPass++;
+
+    }
+    else {
+
+      failedTests.push({
+        Test_ID,
+        reason
+      });
+
+    }
+
+  }
+
+  console.log(
+    '\n' + '='.repeat(60)
+  );
+
+  console.log(
+    `\n📊 KẾT QUẢ: ` +
+    `${totalPass}/${tests.length} PASS\n`
+  );
+
+  if (failedTests.length > 0) {
+
+    console.log('❌ Các test FAIL:');
+
+    failedTests.forEach(t => {
+
+      console.log(
+        `   - ${t.Test_ID}: ${t.reason}`
+      );
+
+    });
+
+  }
+
+  const rate =
+    Math.round(
+      (totalPass / tests.length) * 100
+    );
+
+  console.log(
+    `\n📈 Tỉ lệ pass: ${rate}%`
+  );
+
+}
+
+runTests();

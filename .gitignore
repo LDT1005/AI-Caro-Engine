@@ -1,0 +1,6 @@
+ai.js
+ai.wasm
+*.wasm
+node_modules/
+.DS_Store
+Thumbs.db
