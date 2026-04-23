@@ -18,7 +18,7 @@ if (typeof Module !== 'undefined' && Module.calledRun) {
   Module.onRuntimeInitialized = onModuleReady;
 }
 
-// 🔥 fallback thông minh hơn (random)
+
 function findFallbackMove(board) {
   const empty = [];
   for (let i = 0; i < 225; i++) {
@@ -81,7 +81,7 @@ self.onmessage = function (e) {
 
     if (sessionId !== currentSessionId || requestId !== currentRequestId) return;
 
-    // 🔥 FIX: nếu AI trả sai → random fallback
+    
     if (
       bestRow === -1 ||
       bestCol === -1 ||

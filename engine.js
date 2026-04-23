@@ -65,7 +65,7 @@ class Engine {
   }
 
   makeMove(index) {
-    // 🔥 enforce human turn
+    
     if (this.currentPlayer !== this.config.humanPlayer) return false;
 
     if (this.gameStatus !== 'ONGOING') return false;
@@ -90,7 +90,7 @@ class Engine {
 
     this.currentPlayer *= -1;
 
-    // 🔥 tăng requestId khi chuẩn bị gọi AI
+    
     this.requestId++;
 
     this._emit();
@@ -98,7 +98,7 @@ class Engine {
   }
 
   makeAIMove(index, metricsData = {}) {
-    // 🔥 enforce AI turn
+    
     if (this.currentPlayer === this.config.humanPlayer) {
       this._isThinking = false;
       return;

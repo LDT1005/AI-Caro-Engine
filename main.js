@@ -5,7 +5,7 @@ let worker = null;
 let hardTimeoutId = null;
 let workerReady = false;
 
-// 🔥 FIX: lưu requestId đã gửi
+
 let lastSentRequestId = null;
 
 const boardDiv = document.getElementById("board");
@@ -39,7 +39,7 @@ function initWorker() {
     if (data.type === "AI_RESULT") {
       if (data.sessionId !== engine.sessionId) return;
 
-      // 🔥 FIX QUAN TRỌNG NHẤT
+      
       if (data.requestId !== lastSentRequestId) {
         console.warn("[Main] Discard stale result", data.requestId, lastSentRequestId);
         return;
@@ -92,7 +92,7 @@ function handleClick(r, c) {
 
   engine.setThinking(true);
 
-  // 🔥 snapshot requestId
+  
   const currentRequestId = engine.requestId;
   lastSentRequestId = currentRequestId;
 
