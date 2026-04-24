@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Benchmark Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .upload-section { text-align: center; margin-bottom: 30px; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; }
+        .chart-container { position: relative; height: 400px; width: 100%; margin-bottom: 50px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI Core Performance Benchmark</h1>
+    
+    <div class="upload-section">
+        <h3>1. Chọn tệp benchmark_summary.csv của bạn</h3>
+        <input type="file" id="csvFileInput" accept=".csv">
+    </div>
+
+    <div class="chart-container">
+        <canvas id="timeChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="nodeChart"></canvas>
+    </div>
+</div>
+
+<script>
+    let timeChartInstance = null;
+    let nodeChartInstance = null;
+
+    document.getElementById('csvFileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const csvData = event.target.result;
+            processData(csvData);
+        };
+        reader.readAsText(file);
+    });
+
+    function processData(csvData) {
+        const lines = csvData.trim().split('\n');
+        const headers = lines[0].split(',');
+
+        const labels = [];
+        const mmTime = [];
+        const abTime = [];
+        const mmNodes = [];
+        const abNodes = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].split(',');
+            if (row.length < 10) continue;
+
+            const caseId = row[0];
+            const depth = row[1];
+            labels.push(`${caseId} (D${depth})`);
+            
+            mmTime.push(parseFloat(row[2]) || 0);
+            abTime.push(parseFloat(row[3]) || 0);
+            mmNodes.push(parseInt(row[5]) || 0);
+            abNodes.push(parseInt(row[6]) || 0);
+        }
+
+        renderCharts(labels, mmTime, abTime, mmNodes, abNodes);
+    }
+
+    function renderCharts(labels, mmTime, abTime, mmNodes, abNodes) {
+        // Hủy biểu đồ cũ nếu có để vẽ lại
+        if (timeChartInstance) timeChartInstance.destroy();
+        if (nodeChartInstance) nodeChartInstance.destroy();
+
+        // 1. Biểu đồ Thời gian (Linear Scale)
+        const ctxTime = document.getElementById('timeChart').getContext('2d');
+        timeChartInstance = new Chart(ctxTime, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Minimax Time (ms)', data: mmTime, backgroundColor: '#e74c3c' },
+                    { label: 'Alpha-Beta Time (ms)', data: abTime, backgroundColor: '#2ecc71' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { title: { display: true, text: 'Biểu đồ Thời gian xử lý (Càng thấp càng tốt)', font: {size: 18} } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Milliseconds (ms)' } } }
+            }
+        });
+
+        // 2. Biểu đồ Số Node (Logarithmic Scale - Bắt buộc theo tài liệu)
+        const ctxNode = document.getElementById('nodeChart').getContext('2d');
+        nodeChartInstance = new Chart(ctxNode, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Minimax Nodes', data: mmNodes, backgroundColor: '#c0392b' },
+                    { label: 'Alpha-Beta Nodes', data: abNodes, backgroundColor: '#27ae60' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { title: { display: true, text: 'Biểu đồ Số Node đã duyệt (Scale Logarit)', font: {size: 18} } },
+                scales: { 
+                    y: { 
+                        type: 'logarithmic', // Xử lý Edge Case: Chênh lệch node quá lớn
+                        title: { display: true, text: 'Nodes (Log Scale)' }
+                    } 
+                }
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
