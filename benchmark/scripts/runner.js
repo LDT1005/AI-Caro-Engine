@@ -2,99 +2,102 @@ const fs = require('fs');
 const path = require('path');
 const { logMetrics, ensureDirectories } = require('./benchmarkLogs');
 
-// Đường dẫn tương đối dựa trên cấu trúc thư mục dự án
+// Cấu hình đường dẫn hệ thống
 const CASES_FILE = path.join(__dirname, '..', 'cases', 'benchmark_cases.json');
 const WASM_PATH = path.join(__dirname, '..', '..', 'dist', 'wasm', 'ai.js');
 
 async function runBenchmark() {
     ensureDirectories();
 
-    // 1. Kiểm tra file đầu vào
+    // 1. Kiểm tra tính toàn vẹn của tệp đầu vào
     if (!fs.existsSync(CASES_FILE)) {
-        console.error(`[FATAL] Không tìm thấy file cases: ${CASES_FILE}`);
+        console.error(`[FATAL] Missing configuration file: ${CASES_FILE}`);
         return;
     }
 
     if (!fs.existsSync(WASM_PATH)) {
-        console.error(`[FATAL] Không tìm thấy file WASM: ${WASM_PATH}`);
+        console.error(`[FATAL] Missing Engine binary: ${WASM_PATH}`);
         return;
     }
 
-    // 2. Nạp module WebAssembly
-    console.log("[INFO] Đang nạp module WebAssembly từ TV2...");
+    // 2. Khởi tạo Engine (WebAssembly)
+    console.log("[SYSTEM] Initializing WebAssembly Engine...");
     const aiModuleFactory = require(WASM_PATH);
     let Module;
     try {
         Module = await aiModuleFactory();
-        console.log("[OK] WASM Module đã được nạp thành công.");
+        console.log("[SYSTEM] Engine loaded successfully.");
     } catch (error) {
-        console.error("[FATAL] Lỗi khởi tạo WASM Module:", error);
+        console.error("[FATAL] Failed to initialize Engine runtime:", error);
         return;
     }
 
-    // 3. Đọc dữ liệu benchmark cases
+    // 3. Nạp dữ liệu thực nghiệm
     const casesRaw = JSON.parse(fs.readFileSync(CASES_FILE, 'utf-8'));
-    const casesList = casesRaw.cases || casesRaw; // Xử lý cấu trúc object có chứa mảng
+    const casesList = casesRaw.cases || casesRaw; 
 
     const depthsToTest = [3, 4, 5];
-    const timeoutMs = 2000; // Cố định 2000ms theo dự án
+    const timeoutMs = 2000; // Ngưỡng timeout tiêu chuẩn
     
     const envMetadata = {
         os: process.platform,
         nodeVersion: process.version,
-        buildMode: "Release" // WASM build nên luôn là Release
+        buildMode: "Release" 
     };
 
-    console.log("=== BẮT ĐẦU CHẠY BENCHMARK HEADLESS (WASM THẬT) ===");
-    console.log(`Môi trường: ${JSON.stringify(envMetadata)}\n`);
+    console.log("\n===============================================");
+    console.log("          AI ENGINE BENCHMARK SUITE            ");
+    console.log("===============================================");
+    console.log(`[INFO] Environment : ${JSON.stringify(envMetadata)}`);
+    console.log(`[INFO] Target Cases: ${casesList.length}`);
+    console.log("-----------------------------------------------\n");
 
     for (let testCase of casesList) {
-        console.log(`\n>> Đang chạy Case: ${testCase.caseId} [${testCase.group}]`);
+        console.log(`>> Executing Suite: [${testCase.caseId}] - ${testCase.group}`);
         
         for (let depth of depthsToTest) {
             const configs = [false, true]; // [Minimax thuần, Alpha-Beta]
             
             for (let useAB of configs) {
-                // Xử lý logic cắt rủi ro cho Depth 5 Minimax thuần
+                // Đánh giá rủi ro Timeout cho Depth 5
                 if (depth === 5 && !useAB && testCase.expectedRisk === "timeout-prone") {
-                    console.log(`[SKIP] Bỏ qua Minimax thuần tại Depth 5 cho case ${testCase.caseId} vì rủi ro timeout cao.`);
+                    console.log(`   [SKIP] Configuration Minimax(D5) bypassed due to high timeout probability.`);
                     continue;
                 }
 
                 const sessionId = `BENCH_${Date.now()}`;
-                const requestId = `${testCase.caseId}_D${depth}_AB${useAB ? 1 : 0}`;
+                const algorithmLabel = useAB ? "AlphaBeta" : "Minimax  ";
+                const requestId = `${testCase.caseId}_D${depth}_${algorithmLabel.trim()}`;
                 
                 let pointer = null;
 
                 try {
-                    // Trải phẳng mảng 2D thành 1D (225 phần tử)
+                    // Chuẩn bị vùng nhớ cho Mảng 1D
                     const flatBoard = Int32Array.from(testCase.boardState.flat());
-                    const bytesPerElement = flatBoard.BYTES_PER_ELEMENT; // 4 bytes
+                    const bytesPerElement = flatBoard.BYTES_PER_ELEMENT;
                     
-                    // Cấp phát bộ nhớ trên WASM Heap
                     pointer = Module._malloc(flatBoard.length * bytesPerElement);
-                    if (!pointer) throw new Error("WASM Out of Memory");
+                    if (!pointer) throw new Error("Heap allocation failed");
 
-                    // Ghi dữ liệu bàn cờ vào WASM Heap
                     Module.HEAP32.set(flatBoard, pointer / bytesPerElement);
 
-                    // Gọi Engine lõi (Hàm chạy đồng bộ trên WASM)
+                    // Thực thi Core Engine
                     Module._get_best_move(pointer, testCase.playerTurn, depth, timeoutMs, useAB);
 
-                    // Đọc kết quả qua các Getter của C++ (tránh lỗi struct alignment)
+                    // Truy xuất Metrics
                     const row = Module._get_move_row();
                     const col = Module._get_move_col();
                     const score = Module._get_move_score();
                     const nodesEvaluated = Module._get_nodes();
                     const timeMs = Module._get_time_ms();
                     const depthReached = Module._get_depth_reached();
-                    const isTimeout = !!Module._get_is_timeout(); // Ép kiểu bool
+                    const isTimeout = !!Module._get_is_timeout();
 
-                    // Dọn dẹp bộ nhớ ngay lập tức
+                    // Dọn dẹp Heap
                     Module._free(pointer);
                     pointer = null;
 
-                    // Đóng gói contract
+                    // Đóng gói Dữ liệu
                     const metricsData = {
                         sessionId: sessionId,
                         requestId: requestId,
@@ -113,18 +116,26 @@ async function runBenchmark() {
 
                     const logged = logMetrics(metricsData);
                     if (logged) {
-                        console.log(`[OK] ${requestId} | Time: ${timeMs.toFixed(2)}ms | Nodes: ${nodesEvaluated} | Timeout: ${isTimeout}`);
+                        const status = isTimeout ? "WARN" : " OK ";
+                        // Căn lề cho đẹp mắt trên console
+                        console.log(`   [${status}] D${depth} | ${algorithmLabel} | Time: ${timeMs.toFixed(2).padStart(7)}ms | Nodes: ${String(nodesEvaluated).padStart(8)}`);
                     }
                 } catch (error) {
-                    console.error(`[ERROR] Crash tại ${requestId}:`, error);
+                    console.error(`   [FAIL] Critical exception at ${requestId}:`, error.message);
                     if (pointer !== null) {
-                        Module._free(pointer); // Tránh rò rỉ nếu crash giữa chừng
+                        Module._free(pointer); 
                     }
                 }
             }
         }
+        console.log(""); // Dòng trống giữa các case
     }
-    console.log("\n=== HOÀN THÀNH BENCHMARK ===");
+    console.log("===============================================");
+    console.log("             BENCHMARK COMPLETED               ");
+    console.log("===============================================\n");
 }
 
 runBenchmark();
+
+// node benchmark/scripts/runner.js
+// node benchmark/scripts/data_processor.js
