@@ -1,5 +1,4 @@
 // src/frontend-ui/js/ai-adapter.js
-import { GameStatus } from './ui-state.js';
 
 /**
  * AIProviderWrapper: Lớp trung gian điều phối Worker
@@ -17,10 +16,11 @@ export class AIProviderWrapper {
      */
     initWorker() {
         // Tách biệt ranh giới: Mock do TV5 quản lý, Thật do TV2 quản lý
-        const workerPath = this.useMock 
-            ? './workers/mock-ai-worker.js' 
+        // Lưu ý: đường dẫn Worker được tính tương đối từ file HTML đang chạy: src/frontend-ui/index.html
+        const workerPath = this.useMock
+            ? './workers/mock-ai-worker.js'
             : '../engine-runtime/workers/ai-worker.js';
-            
+
         this.worker = new Worker(workerPath);
     }
 
@@ -28,6 +28,8 @@ export class AIProviderWrapper {
      * Giao thức API Giai đoạn 4: Đồng bộ cấu hình Engine (Depth, Mode) trước khi tính toán
      */
     updateEngineConfig(config) {
+        if (!this.worker) return;
+
         this.worker.postMessage({
             action: 'SET_CONFIG',
             depth: config.depth,
@@ -41,10 +43,14 @@ export class AIProviderWrapper {
      * Kết hợp tính cụ thể của GĐ 4 và tính linh hoạt của bản cũ
      */
     requestBestMove(payload) {
+        if (!this.worker) return;
+
         this.worker.postMessage({
             action: 'REQUEST_MOVE',
             board: payload.board,
-            playerTurn: payload.playerTurn || 2, // Mặc định AI là 2 (O) theo chuẩn Giai đoạn 4
+            // Chuẩn toàn dự án: 1 = người đi trước, -1 = người đi sau, 0 = ô trống.
+            // AI hiện tại trong config.js là -1, nên tuyệt đối không dùng mặc định 2.
+            playerTurn: payload.playerTurn ?? -1,
             depth: payload.depth,
             mode: payload.mode,
             gameId: payload.gameId,
@@ -56,6 +62,7 @@ export class AIProviderWrapper {
      * Đăng ký callback nhận phản hồi từ Worker
      */
     onResponse(callback) {
+        if (!this.worker) return;
         this.worker.onmessage = callback;
     }
 
@@ -63,15 +70,17 @@ export class AIProviderWrapper {
      * Đăng ký callback xử lý lỗi hệ thống (WASM/Worker sập)
      */
     onError(callback) {
+        if (!this.worker) return;
         this.worker.onerror = callback;
     }
 
     /**
      * Gửi tín hiệu Reset cho Engine
-     * TV5 không tự ý terminate worker thật của TV2 để bảo toàn tài nguyên WASM, 
+     * TV5 không tự ý terminate worker thật của TV2 để bảo toàn tài nguyên WASM,
      * chỉ gửi lệnh Reset để Engine dọn dẹp Heap.
      */
     resetEngine() {
+        if (!this.worker) return;
         this.worker.postMessage({ action: 'RESET_ENGINE' });
     }
 }
