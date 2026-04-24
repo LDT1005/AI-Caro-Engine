@@ -54,10 +54,14 @@ AI-CARO-ENGINE/
 │       ├── ai.wasm              
 │       └── ai.js                
 │
-├── benchmark/                   
-│   ├── benchmarkLogs.js
-│   └── runner.js                
-│
+├── benchmark/
+│   ├── scripts/             <-- Bạn cần tạo thư mục này
+│   │    ├── benchmarkLogs.js <-- Bỏ file vào đây
+│   │    └── runner.js
+│   ├── cases
+│   │    └── benchmark_cases.json
+│   ├──raw
+│   └──processed
 ├── heuristic-qa/                
 │   ├── heuristics/
 │   │   └── weights.json         
