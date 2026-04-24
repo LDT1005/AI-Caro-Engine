@@ -63,6 +63,9 @@ int count_line(int board[BOARD_SIZE][BOARD_SIZE], int r, int c, int dr, int dc, 
 }
 
 int evaluate_move(int board[BOARD_SIZE][BOARD_SIZE], int r, int c, int player) {
+    // FIX ROOT CAUSE: Lưu lại trạng thái thật của ô cờ để không vô tình biến nó thành EMPTY
+    int original_val = board[r][c];
+    
     int opponent = (player == 1) ? 2 : 1;
     
     int my_win = 0, my_open4 = 0, my_open3 = 0, my_half4 = 0;
@@ -88,7 +91,9 @@ int evaluate_move(int board[BOARD_SIZE][BOARD_SIZE], int r, int c, int player) {
         else if (op_count == 4 && op_blocks == 1) op_half4++;
         else if (op_count == 3 && op_blocks == 0) op_open3++;
     }
-    board[r][c] = EMPTY;
+    
+    // FIX ROOT CAUSE: Trả lại trạng thái nguyên thủy cho ô cờ (không gán cứng bằng EMPTY)
+    board[r][c] = original_val;
 
     if (my_win > 0) return 10000000;
     if (op_win > 0) return 9000000;
@@ -111,7 +116,7 @@ void get_candidates(int board[BOARD_SIZE][BOARD_SIZE], Candidate candidates[225]
         for (int c = 0; c < BOARD_SIZE; ++c) {
             if (board[r][c] != EMPTY) {
                 has_piece = true;
-                continue;
+                continue; // An toàn lớp 1: Chỉ sinh nước đi trên ô trống
             }
             
             int min_r = max(0, r - 2);
@@ -205,9 +210,13 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
         for (int i = 0; i < candidate_count; i++) {
             auto& move = candidates[i];
             
+            // THỰC HIỆN NƯỚC ĐI
             board[move.r][move.c] = ai_player;
-            int child_best_r, child_best_c;
+            
+            int child_best_r = -1, child_best_c = -1;
             long eval_score = minimax(board, depth - 1, alpha, beta, false, ai_player, start_time, time_limit_ms, nodes, timeout_flag, child_best_r, child_best_c, use_alpha_beta);
+            
+            // RÀNG BUỘC 5: LÀM SẠCH BÀN CỜ SAU KHI ĐÁNH GIÁ (UNDO)
             board[move.r][move.c] = EMPTY;
             
             if (timeout_flag) return 0; 
@@ -228,9 +237,13 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
         for (int i = 0; i < candidate_count; i++) {
             auto& move = candidates[i];
             
+            // THỰC HIỆN NƯỚC ĐI (ĐỐI THỦ)
             board[move.r][move.c] = opponent;
-            int child_best_r, child_best_c;
+            
+            int child_best_r = -1, child_best_c = -1;
             long eval_score = minimax(board, depth - 1, alpha, beta, true, ai_player, start_time, time_limit_ms, nodes, timeout_flag, child_best_r, child_best_c, use_alpha_beta);
+            
+            // RÀNG BUỘC 5: LÀM SẠCH BÀN CỜ SAU KHI ĐÁNH GIÁ (UNDO)
             board[move.r][move.c] = EMPTY;
             
             if (timeout_flag) return 0;
@@ -249,7 +262,7 @@ long minimax(int board[BOARD_SIZE][BOARD_SIZE], int depth, long alpha, long beta
     }
 }
 
-// Hàm Wrapper đóng gói Iterative Deepening để trả về kết quả
+// Hàm Wrapper đóng gói
 AIMove run_ai_search(int board[BOARD_SIZE][BOARD_SIZE], int player_turn, int max_depth, int timeout_ms, bool use_alpha_beta) {
     AIMove result;
     auto start_time = high_resolution_clock::now();
@@ -263,6 +276,7 @@ AIMove run_ai_search(int board[BOARD_SIZE][BOARD_SIZE], int player_turn, int max
     long global_best_score = -INF;
     int global_depth_reached = 0;
     
+    // Fallback lớp 2: Khởi tạo global_best với ứng viên tốt nhất hiện có
     Candidate candidates[225];
     int candidate_count = 0;
     get_candidates(board, candidates, candidate_count, player_turn);
@@ -285,7 +299,8 @@ AIMove run_ai_search(int board[BOARD_SIZE][BOARD_SIZE], int player_turn, int max
         if (local_timeout) {
             timeout_flag = true;
             break; 
-        } else {
+        } else if (depth_best_r != -1) {
+            // Cập nhật trạng thái an toàn
             global_best_r = depth_best_r;
             global_best_c = depth_best_c;
             global_best_score = depth_score;
@@ -295,14 +310,19 @@ AIMove run_ai_search(int board[BOARD_SIZE][BOARD_SIZE], int player_turn, int max
         }
     }
 
-    auto end_time = high_resolution_clock::now();
-    float elapsed_ms = duration_cast<milliseconds>(end_time - start_time).count();
+    // RÀNG BUỘC 3: C++ FALLBACK (Safety Net cuối cùng trước khi gửi về JS)
+    if (global_best_r == -1 || global_best_c == -1 || board[global_best_r][global_best_c] != EMPTY) {
+        if (candidate_count > 0) {
+            global_best_r = candidates[0].r;
+            global_best_c = candidates[0].c;
+        }
+    }
 
     result.row = global_best_r;
     result.col = global_best_c;
     result.score = global_best_score;
     result.nodes_evaluated = total_nodes;
-    result.time_ms = elapsed_ms;
+    result.time_ms = duration_cast<milliseconds>(high_resolution_clock::now() - start_time).count();
     result.is_timeout = timeout_flag;
     result.depth_reached = global_depth_reached;
 

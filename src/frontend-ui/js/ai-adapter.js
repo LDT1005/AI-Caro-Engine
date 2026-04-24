@@ -18,8 +18,8 @@ export class AIProviderWrapper {
         // Tách biệt ranh giới: Mock do TV5 quản lý, Thật do TV2 quản lý
         // Lưu ý: đường dẫn Worker được tính tương đối từ file HTML đang chạy: src/frontend-ui/index.html
         const workerPath = this.useMock
-            ? './workers/mock-ai-worker.js'
-            : '../engine-runtime/workers/ai-worker.js';
+           ? `./workers/mock-ai-worker.js?v=${Date.now()}`
+            : `../engine-runtime/workers/ai-worker.js?v=${Date.now()}`;
 
         this.worker = new Worker(workerPath);
     }
