@@ -59,7 +59,7 @@ Dự án tập trung vào việc xây dựng một **Core AI** mạnh mẽ cho t
 | **Thành viên 5** | UI/UX Developer | Vẽ Board, Dashboard Metrics, Control Panel | UI mượt mà; Reset xóa sạch metrics |
 
 ## 🚀 Cài đặt & Triển khai
-
+ 
 1. **Clone dự án:**
    ```bash
    git clone [https://github.com/your-username/ai-caro-engine.git](https://github.com/your-username/ai-caro-engine.git)
