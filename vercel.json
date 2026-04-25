@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/src/frontend-ui/index.html",
+      "permanent": false
+    }
+  ]
+}
